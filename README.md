@@ -25,7 +25,7 @@ There's no overall score: adding unlike things would imply a scale that doesn't 
 **Links**
 - [How to run, test and use it](docs/INSTRUCTIONS.md)
 - [System design](docs/SYSTEM-DESIGN.md) · [What's where](docs/FILE-STRUCTURE.md)
-- [Manual review checklist](docs/MANUAL-REVIEW.md) · [Prompt log](docs/PROMPTS.md)
+- [Research on existing measures](docs/RESEARCH.md) · [Manual review checklist](docs/MANUAL-REVIEW.md) · [Prompt log](docs/PROMPTS.md)
 - [Feedback](https://github.com/amalmehta/DoYouThinkOnYourOwn/issues/new)
 
 Code: MIT. The AQ-10 items are © Autism Research Centre, University of Cambridge, free for non-profit use and not covered by the MIT licence.

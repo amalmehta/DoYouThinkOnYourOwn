@@ -20,6 +20,7 @@ docs/
   SYSTEM-DESIGN.md       Architecture, decisions, limits
   INSTRUCTIONS.md        Use, run, test, deploy
   MANUAL-REVIEW.md       What tests can't check
+  RESEARCH.md            Cited review of existing measures (CRT, AOT, NCS, BSR, Asch)
   PROMPTS.md             Prompt log
   screenshots/           Light, dark and phone screenshots
 DoYouThinkOnYourOwn?.md  The project spec, with decisions and definitions
