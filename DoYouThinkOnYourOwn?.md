@@ -434,6 +434,7 @@ CHANGELOG:
 
 - 2026-10-27 — created
 - 2026-10-27 — interview answers, definitions, deferred list and deliverables filled in
+- 2026-10-27 — first version built and published (PR #1); facts corrected after source check (head heat ≤10%, 2026 population figures, CIA Factbook sources replaced)
 - 2026-10-27 — added docs/RESEARCH.md: cited review of CRT, CRT-2, AOT, NCS-6/18, Bullshit Receptivity and Asch conformity, plus free online tests; recommends writing our own tasks with adapted controls
 - 2026-09-15 — added meta-instruction: built-out applications include a small feedback tab
 - 2026-09-15 — added meta-instruction: no "Claude" attribution in commits, PRs, or branches
