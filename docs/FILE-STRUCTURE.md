@@ -4,7 +4,7 @@
 index.html               The page shell: header, settings dialog, feedback tab
 src/
   app.js                 Screens, state, events (the only file that touches the DOM)
-  tasks.js               Three sets of 12 questions, the five kinds, twists, truths, sources
+  tasks.js               Question sets per level (easy 3, medium 1, hard 1; 12 questions each), the five kinds, twists, truths, sources
   scoring.js             Judging, counts, herd rate, Wilson range, shift, import checks, share links
   charts.js              Results-over-time chart and typeset equations
   aq10.js                AQ-10 items and published scoring key

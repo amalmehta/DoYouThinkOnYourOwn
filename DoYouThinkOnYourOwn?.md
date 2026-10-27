@@ -422,6 +422,17 @@ Definitions (revised 2026-10-27: herd-first, after the user said the survey shou
 - Autism: optional separate AQ-10 section (Allison et al. 2012). One point per item scored per the published key; 6 or more = "worth discussing with a clinician". Labelled a screener, not a diagnosis. Never mixed into the main result.
 - Done: every flow passes unit + UI tests in light/dark and at phone and desktop sizes, all facts cited and checked, live on GitHub Pages.
 
+Levels and going back (added 2026-10-27, at the user's request; they chose harder facts, a locked first answer, one set each for medium and hard, and a chart per level):
+- Level: Easy, Medium or Hard, picked on the start screen and remembered. Every level has the same 12 slots, kinds, judging rules and formulas. Only how hard the facts are to work out changes; the answer is always on screen.
+  - Easy: the facts are plain to see (sets A, B, C).
+  - Medium: the facts take a step of working out, such as a unit price, a total over time or a stacked discount (set M).
+  - Hard: the facts are in the small print, need several steps or turn on probability, and the experts are in their own field (set H).
+- Why harder facts and not more pressure: in Baron et al.'s experiments, when getting the answer right mattered, people conformed more on hard judgements and less on easy ones (Baron, Vandello & Brunsman 1996, J Pers Soc Psychol 71(5):915–927, https://doi.org/10.1037/0022-3514.71.5.915). Known cost: harder facts also test numeracy. Switching's answer-first step separates the two; popularity can't.
+- Fresh versus primed, per level: an attempt is primed when its level's sets are used up. With $a_\ell$ = earlier attempts at level $\ell$ and $S_\ell$ = that level's set count (easy 3, medium 1, hard 1), the set used is $a_\ell \bmod S_\ell$, and the attempt is primed when $a_\ell \ge S_\ell$.
+- Comparing levels: herd rates from different levels are never compared or charted together. Each level has its own chart; one table lists every attempt with its level. Records saved before levels existed read as easy.
+- Back: available on every question after the first, and goes to the previous question. On switching and opinion questions, once the crowd or group has been shown, the first answer is locked and only the final answer can change. Going back never resets a question's step.
+- Done (levels and Back): all question sets at every level pass the same shape and arithmetic tests; each authority claim and citation checked against its source by a separate agent; UI tests cover Back with a locked first answer, the remembered level, the saved level and a chart per level, on desktop, WebKit and phone.
+
 Traits and scoring (added 2026-10-27; the user chose 3 reported traits plus 1 deferred, a profile with no composite, and editorial count bands):
 
 Basis labels used below. **Editorial**: our own choice, written for this survey and not checked against data from other people. **Validated**: comes from a published instrument and its studies, applied the way they used it. Nothing in this survey is validated. Two pieces are *adapted* from validated designs (the first-impression coding from the CRT and the switching design from Asch), but our items, item counts and bands are editorial, so the results are editorial too.
@@ -520,6 +531,9 @@ Deferred (proposals, not built):
 - Norms: any "compared with others" wording or validated bands. Needs answers from many people, so it waits for the backend-and-consent item below.
 - Reliability: test–retest across question sets A, B and C, once enough attempts exist to check whether the sets are equally hard.
 - Depth of reasoning (free-text reasons or similar); not measurable with the current task types.
+- More sets for medium and hard, so their retakes are fresh too. Worth it only if people actually retake those levels.
+- The level in share links. Links still hold only the five counts, so a friend's link doesn't say which level it came from.
+- Checking that the levels really differ in difficulty. They are editorial: written to be harder, not yet measured as harder.
 - Untagged control claims to estimate an authority effect within a person.
 - Replacing the two first-impression puzzles, which are reworded versions of widely known CRT items (see docs/RESEARCH.md).
 - Collecting answers across people (needs a backend and consent).
@@ -539,6 +553,8 @@ OPEN QUESTIONS / ASSUMPTIONS:
 - Assumed the bands' cut points (0, below half, half or more, all) are editorial and use "this time" wording, so no band reads as a fixed trait.
 - Assumed T2 and T3 show counts only, with no rate or range, because 2 items give a range too wide to help (1 of 2 → 9–91%).
 - Assumed the Asch figure is shown as a reference point beside T1, never as a cut-off.
+- Assumed (levels) that "easy" is the existing three sets unchanged, and that difficulty is the same for every kind except opinion, which has no right answer: medium and hard opinion statements are on topics people have usually thought about less.
+- Assumed the level choice is remembered between visits, defaults to easy, and that a resumed attempt keeps the level it started with.
 - Open: whether the T4 cue-right items should be built next; it is the only way to tell a contrarian from an independent thinker.
 
 CHANGELOG:
@@ -548,6 +564,7 @@ CHANGELOG:
 - 2026-10-27 — added quantitative metrics (herd rate with 95% Wilson range, opinion shift size), results over time (chart, table, export/import) and three question sets so retakes aren't primed
 - 2026-10-27 — refocused on herd mentality: 8 of 12 tasks test popularity, switching and opinion shift, with an answer-alone-first step and a no-crowd control; instructions tasks dropped
 - 2026-10-27 — first version built and published (PR #1); facts corrected after source check (head heat ≤10%, 2026 population figures, CIA Factbook sources replaced)
+- 2026-10-27 — added Easy, Medium and Hard levels (harder facts, same scoring; 24 new fact-checked questions), a chart per level, Back on every question with the first answer locked once the crowd is shown, and a warning when an attempt can't be saved
 - 2026-10-27 — defined the traits: crowd independence, independence from authority and reflective reasoning reported as a profile with no composite; calibrated scepticism vs contrarianism defined but deferred; formulas, editorial count bands, results disclaimer, and a map from each CONTEXT term to its trait
 - 2026-10-27 — added docs/RESEARCH.md: cited review of CRT, CRT-2, AOT, NCS-6/18, Bullshit Receptivity and Asch conformity, plus free online tests; recommends writing our own tasks with adapted controls
 - 2026-09-15 — added meta-instruction: built-out applications include a small feedback tab

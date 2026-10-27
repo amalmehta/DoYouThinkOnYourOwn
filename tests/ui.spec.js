@@ -140,7 +140,7 @@ test('quitting mid-way, even mid-reveal, resumes at the same step', async ({ pag
   await page.locator('label.opt').nth(0).click();
   await page.locator('#next').click(); // now on the reveal
   await page.reload();
-  await page.getByRole('button', { name: /Resume at 3 of 12/ }).click();
+  await page.getByRole('button', { name: /Resume easy at 3 of 12/ }).click();
   await expect(page.getByText(/71% of people/)).toBeVisible();
   await page.locator('label.opt').nth(0).click();
   await page.locator('#next').click();
@@ -172,6 +172,53 @@ test('a blocked save says so instead of failing silently', async ({ page }) => {
   await page.goto('/');
   await runAll(page, NONE_ALONG);
   await expect(page.getByText(/Couldn’t save this attempt/)).toBeVisible();
+});
+
+test('Back returns to earlier questions; a first answer stays locked once the crowd is shown', async ({ page }) => {
+  await page.getByRole('button', { name: /^Start/ }).click();
+  await expect(page.getByRole('button', { name: 'Back' })).toBeDisabled();
+  await answerAt(page, 0, 1);
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.locator('.progress')).toContainText('1 of 12');
+  await expect(page.locator('input[name="opt"]').nth(1)).toBeChecked(); // earlier answer kept
+  await page.locator('label.opt').nth(0).click(); // change it
+  await page.locator('#next').click();
+  await answerAt(page, 1, 0);
+  // Switching: answer alone, see the crowd, then go back and forward again.
+  await page.locator('label.opt').nth(0).click();
+  await page.locator('#next').click();
+  await expect(page.getByText('Locked now that you’ve seen what others chose.')).toBeVisible();
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.locator('.progress')).toContainText('2 of 12');
+  await page.locator('#next').click();
+  // Back on question 3 shows the crowd step again, not the first step.
+  await expect(page.getByText(/71% of people/)).toBeVisible();
+  await page.locator('label.opt').nth(0).click();
+  await page.locator('#next').click();
+  for (let i = 3; i < 12; i++) await answerAt(page, i, NONE_ALONG[i]);
+  // Question 1 was changed to the bestseller, so popularity counts 1.
+  await expect(page.locator('.kcard[data-kind="popularity"]')).toContainText('Went along 1 of 3 times');
+});
+
+test('levels: the choice is remembered, attempts save their level, and each level has its own chart', async ({ page }) => {
+  await page.locator('.levels label', { hasText: 'Medium' }).click();
+  await page.reload();
+  await expect(page.getByLabel(/Medium/)).toBeChecked();
+  await runAll(page, NONE_ALONG);
+  await expect(page.getByText('Medium level')).toBeVisible();
+  await expect(page.getByText('This is your first medium attempt.')).toBeVisible();
+  await page.goto('/');
+  await runAll(page, NONE_ALONG);
+  await expect(page.locator('.metric')).toContainText('primed'); // medium has one set, so the retake repeats it
+  await expect(page.locator('.trend-fig')).toBeVisible();
+  await page.goto('/');
+  await page.locator('.levels label', { hasText: 'Easy' }).click();
+  await expect(page.getByText('No easy attempts yet.')).toBeVisible();
+  await page.getByText('Show all attempts as a table').click();
+  await expect(page.locator('.trend-table tbody tr')).toHaveCount(2);
+  await expect(page.locator('.trend-table tbody')).toContainText('Medium');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('dytooy.history')));
+  expect(saved.map((a) => [a.level, a.primed])).toEqual([['medium', false], ['medium', true]]);
 });
 
 test('a shared link shows a friend’s counts; a broken one says so', async ({ page }) => {
@@ -256,14 +303,14 @@ test('results lead with the herd rate and its range', async ({ page }) => {
 
 test('second attempt gets fresh questions, and the chart appears', async ({ page }) => {
   await runAll(page, NONE_ALONG);
-  await expect(page.getByText('This is your first attempt')).toBeVisible();
+  await expect(page.getByText('This is your first easy attempt')).toBeVisible();
   await page.getByRole('button', { name: 'Take it again' }).click();
   await expect(page.getByRole('heading', { name: /kettle/ })).toBeVisible();
   for (let i = 0; i < ALL_ALONG.length; i++) await answerAt(page, i, ALL_ALONG[i]);
   await expect(page.locator('.trend-wrap .dot')).toHaveCount(2);
   await page.locator('.trend-wrap .hit').first().focus();
   await expect(page.locator('.trend-wrap .tip')).toContainText('Attempt 1');
-  await page.getByText('Show as a table').click();
+  await page.getByText('Show all attempts as a table').click();
   await expect(page.locator('.trend-table tbody tr')).toHaveCount(2);
   await expect(page.getByText('1 fresh set left')).toBeVisible();
 });
@@ -283,7 +330,7 @@ test('export, then import into a clean browser by upload, drop and paste', async
   const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: 'Import' }).click()]);
   await chooser.setFiles(path);
   await expect(page.locator('#toast')).toContainText('Imported 1 attempt');
-  await expect(page.getByText('One attempt so far')).toBeVisible();
+  await expect(page.getByText('One easy attempt so far')).toBeVisible();
 
   // Importing the same file again skips the duplicate.
   const [chooser2] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: 'Import' }).click()]);

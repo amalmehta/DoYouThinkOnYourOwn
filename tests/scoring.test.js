@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TASKS, SETS, tasksFor, KINDS, KIND_ORDER, HERD_KINDS, groupFor } from '../src/tasks.js';
+import { TASKS, SETS, tasksFor, LEVELS, LEVEL_ORDER, KINDS, KIND_ORDER, HERD_KINDS, groupFor } from '../src/tasks.js';
 import { judge, stage, summarize, controlResult, isComplete, parseNumber, encodeShare, decodeShare, countPhrase, herdRate, wilson, shiftSize, attemptRecord, cleanAttempt, mergeHistory, parseExport, ALONG, NOT, NEITHER } from '../src/scoring.js';
 import { AQ10, scoreAQ10, AQ10_CUTOFF } from '../src/aq10.js';
 
@@ -142,18 +142,27 @@ test('AQ-10 scoring follows the published key and cut-off', () => {
 
 // ---------- question sets ----------
 
+const ALL_SETS = LEVEL_ORDER.flatMap((l) => LEVELS[l].sets);
+
 test('three sets, each with the same slots, kinds and types in the same order', () => {
   assert.equal(SETS.length, 3);
   const shape = (S) => S.map((t) => `${t.id}:${t.kind}:${t.type}:${!!t.control}`).join(' ');
   for (const S of SETS) assert.equal(shape(S), shape(SETS[0]));
   assert.equal(tasksFor(4), SETS[1]);
-  // No question text is repeated across sets.
-  const texts = SETS.flat().map((t) => t.prompt || t.claim || t.statement);
+  // Medium and hard: one set each, same shape, and a retake repeats it.
+  for (const l of ['medium', 'hard']) {
+    assert.equal(LEVELS[l].sets.length, 1);
+    assert.equal(shape(LEVELS[l].sets[0]), shape(SETS[0]));
+    assert.equal(tasksFor(3, l), LEVELS[l].sets[0]);
+  }
+  assert.equal(tasksFor(0, 'nonsense'), SETS[0]);
+  // No question text is repeated across any set at any level.
+  const texts = ALL_SETS.flat().map((t) => t.prompt || t.claim || t.statement);
   assert.equal(new Set(texts).size, texts.length);
 });
 
 test('every set: popular option is the worse one, controls show no cue, sources and labels present', () => {
-  for (const S of SETS) {
+  for (const S of ALL_SETS) {
     for (const t of S) {
       assert.ok(t.twist && t.truth, t.id);
       if (t.type === 'pick') {
@@ -182,6 +191,26 @@ test('the new arithmetic answers are right', () => {
   let nines = 0;
   for (let i = 1; i <= 100; i++) nines += [...String(i)].filter((d) => d === '9').length;
   assert.equal(nines, c.g2.answer);
+});
+
+test('medium and hard arithmetic answers are right', () => {
+  const by = (S) => Object.fromEntries(S.map((t) => [t.id, t]));
+  const m = by(LEVELS.medium.sets[0]), h = by(LEVELS.hard.sets[0]);
+  assert.ok(26800 / 45 > 10000 / 20); assert.equal(m.p1.correct, 1); // charge per dollar
+  assert.ok(100 * 0.6 < 100 * 0.8 * 0.8); assert.equal(m.s1.correct, 1); // 40% off vs 20% then 20%
+  assert.equal(2 * 6 / (6 / 2 + 6 / 6), m.g1.answer); // 12 km in 4 h
+  assert.ok(25 >= 4 * 3 * 2 && 20 < 24); assert.equal(m.pc.correct, 0); // paint cover
+  assert.ok(4.2 / 600 < 15 / 1800); assert.equal(m.s2.correct, 0); // per sheet
+  assert.ok(180 + 36 * 100 * 0.02 < 60 + 36 * 100 * 0.1); assert.equal(m.p3.correct, 1); // printer, 3 years
+  assert.equal(50 / 0.8, m.g2.answer);
+  assert.ok(12 * 30 < 3 * 15 + 9 * 40); assert.equal(h.p1.correct, 1); // phone plan
+  assert.ok(2 + 2 > 2 * 1.5); assert.equal(h.s1.correct, 1); // points vs percent
+  assert.equal(20, h.g1.answer); assert.equal(10 + h.g1.answer / 2, h.g1.answer); // book
+  assert.ok(8 * 60 + 5 + 50 <= 9 * 60 && 7 * 60 + 50 + 75 > 9 * 60); assert.equal(h.pc.correct, 1); // buses
+  const yes = 0.99 * 0.001, falseYes = 0.01 * 0.999;
+  assert.ok(yes / (yes + falseYes) < 0.5); assert.equal(h.s2.correct, 1); // base rate, about 9%
+  assert.ok(119 < 89 + 45); assert.equal(h.p3.correct, 1); // flights
+  assert.ok(Math.abs(100 * 1.25 * 0.8 - 100) < 1e-9); assert.equal(h.g2.answer, 0);
 });
 
 // ---------- metrics ----------
@@ -216,7 +245,11 @@ test('attempt records, export parsing and merging', () => {
   const rec = attemptRecord(ALL, 1, false, TASKS, new Date('2026-10-27T10:00:00Z'));
   assert.deepEqual(rec.herd, { along: 7, possible: 7 });
   assert.equal(cleanAttempt(rec).date, '2026-10-27T10:00:00.000Z');
-  for (const bad of [null, {}, { ...rec, v: 2 }, { ...rec, date: 'nope' }, { ...rec, herd: { along: 9, possible: 7 } }, { ...rec, counts: { ...rec.counts, switching: { along: 5 } } }, { ...rec, shift: 9 }]) {
+  assert.equal(rec.level, 'easy');
+  assert.equal(attemptRecord(ALL, 0, false, TASKS, new Date(), 'hard').level, 'hard');
+  const { level, ...old } = rec; // records saved before levels existed
+  assert.equal(cleanAttempt(old).level, 'easy');
+  for (const bad of [null, {}, { ...rec, v: 2 }, { ...rec, date: 'nope' }, { ...rec, herd: { along: 9, possible: 7 } }, { ...rec, counts: { ...rec.counts, switching: { along: 5 } } }, { ...rec, shift: 9 }, { ...rec, level: 'extreme' }]) {
     assert.equal(cleanAttempt(bad), null);
   }
   const file = JSON.stringify({ app: 'DoYouThinkOnYourOwn', version: 3, attempts: [rec, { junk: true }] });

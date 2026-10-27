@@ -475,11 +475,298 @@ const SET_C = [
   },
 ];
 
-// Each attempt gets the next unseen set; after three, sets repeat and the
-// attempt is marked primed.
-export const SETS = [SET_A, SET_B, SET_C];
+// Medium: same slots and scoring, but the facts take working out: unit prices,
+// total cost over time, stacked discounts. The answer is always on screen.
+const SET_M = [
+  {
+    id: 'p1', kind: 'popularity', type: 'pick',
+    prompt: 'You want the most charge for each dollar you spend. Which power bank do you buy?',
+    options: [
+      { name: 'VoltPak 10', lines: ['10,000 mAh', '$20', '4.5 ★'], badge: 'Bestseller · 15,200 reviews' },
+      { name: 'Juno 27', lines: ['26,800 mAh', '$45', '4.4 ★'], badge: '420 reviews' },
+    ],
+    correct: 1, crowd: { option: 0 },
+    invented: 'Both products and their numbers were invented for this test.',
+    twist: 'The cheaper one feels like the better deal, and the badge agrees. Per dollar, it isn’t.',
+    truth: 'Juno 27: about 596 mAh per dollar, against 500 for the VoltPak.',
+    sources: [SALGANIK],
+  },
+  {
+    id: 'a1', kind: 'authority', type: 'rate',
+    tag: 'A sports physiotherapist says',
+    claim: 'stretching before you run prevents injuries.',
+    ask: 'How likely is this to be true?',
+    options: LIKELIHOOD, alongFrom: 2, invented: 'The physiotherapist is invented for this test.',
+    check: 'A systematic review in the BMJ found that stretching before exercise gave no useful reduction in injury risk, in two large trials of army recruits. A later meta-analysis of 25 trials in the British Journal of Sports Medicine found no benefit from stretching, while strength training cut injuries to under a third.',
+    twist: 'This is a claim you hear from coaches everywhere, and the expert was in the right field. The tag was still the only support.',
+    truth: 'Not supported. In trials, stretching before exercise barely changed injury risk. Strength training did.',
+    sources: [
+      { label: 'Herbert & Gabriel (2002), BMJ 325:468', url: 'https://doi.org/10.1136/bmj.325.7362.468' },
+      { label: 'Lauersen, Bertelsen & Andersen (2014), Br J Sports Med 48:871–877', url: 'https://doi.org/10.1136/bjsports-2013-092538' },
+    ],
+  },
+  {
+    id: 's1', kind: 'switching', type: 'switch',
+    prompt: 'A $100 jacket. Shop A takes 20% off, then another 20% off the reduced price. Shop B takes 40% off.',
+    ask: 'Which is cheaper?',
+    options: ['Shop A', 'Shop B'],
+    correct: 1, crowd: { option: 0, pct: 67 },
+    invented: 'The 67% was invented for this test.',
+    twist: 'You had the numbers. The only new thing in the second step was a headcount.',
+    truth: 'Shop B: $60. Shop A is $100 → $80 → $64, because the second 20% comes off a smaller price.',
+    sources: [ASCH, FRANZEN],
+  },
+  {
+    id: 'o1', kind: 'opinion', type: 'shift',
+    statement: '“Central banks should aim for 3% inflation instead of 2%.”',
+    ask: 'How much do you agree?',
+    ...OPINION,
+  },
+  {
+    id: 'g1', kind: 'gut', type: 'number',
+    prompt: 'You walk up a hill at 2 km/h and come straight back down the same path at 6 km/h.',
+    ask: 'What is your average speed for the whole trip, in km/h?',
+    unit: 'km/h',
+    answer: 3, lure: 4,
+    twist: 'Averaging 2 and 6 gives 4, but you spend three times as long going up as coming down.',
+    truth: '3 km/h. Say the path is 6 km: 3 hours up, 1 hour down, 12 km in 4 hours.',
+    sources: [FREDERICK],
+    note: 'A new item in the style of the Cognitive Reflection Test.',
+  },
+  {
+    id: 'p2', kind: 'popularity', type: 'pick',
+    prompt: 'You want to know whether a sleep app actually improves sleep. Which do you trust?',
+    options: [
+      { name: '“82% of users say they sleep better”', lines: ['Survey of 50,000 current users', 'Run by the app maker'], badge: 'Trending · 60,000 shares' },
+      { name: '“Small improvement in a controlled trial”', lines: ['300 people, randomly assigned', 'Plan published in advance'], badge: '900 shares' },
+    ],
+    correct: 1, crowd: { option: 0 },
+    invented: 'Both studies and their share counts were invented for this test.',
+    twist: 'The survey is huge, but it only asked current users, who are the people it suited, and the maker ran it. Size can’t fix who was asked.',
+    truth: 'The trial. Random assignment is what lets you say the app caused the change.',
+    sources: [SALGANIK],
+  },
+  {
+    id: 'pc', kind: 'popularity', type: 'pick', control: true,
+    prompt: 'You’re painting a 4 m × 3 m wall with two coats. Which do you buy?',
+    options: [
+      { name: 'One big tin', lines: ['Covers 25 m²', '$30'] },
+      { name: 'Two small tins', lines: ['Cover 10 m² each', '$28'] },
+    ],
+    correct: 0, crowd: { option: 1 },
+    invented: 'Both products were invented for this test.',
+    twist: 'This one had no crowd cue at all. It shows how you choose when nobody’s choice is on display.',
+    truth: 'The big tin. Two coats on 12 m² need 24 m² of cover; the small tins only give 20.',
+    sources: [],
+  },
+  {
+    id: 's2', kind: 'switching', type: 'switch',
+    prompt: 'Pack A: 3 rolls of paper towel for $4.20, 200 sheets each. Pack B: 12 rolls for $15.00, 150 sheets each.',
+    ask: 'Which is cheaper per sheet?',
+    options: ['Pack A', 'Pack B'],
+    correct: 0, crowd: { option: 1, pct: 72 },
+    invented: 'The 72% was invented for this test.',
+    twist: 'The big pack looks like the bulk deal. The information didn’t change, only the headcount appeared.',
+    truth: 'Pack A: 600 sheets for $4.20 is 0.70¢ a sheet. Pack B: 1,800 sheets for $15.00 is about 0.83¢.',
+    sources: [ASCH, FRANZEN],
+  },
+  {
+    id: 'a2', kind: 'authority', type: 'rate',
+    tag: 'An orthopaedic surgeon says',
+    claim: 'cracking your knuckles causes arthritis in your hands.',
+    ask: 'How likely is this to be true?',
+    options: LIKELIHOOD, alongFrom: 2, invented: 'The orthopaedic surgeon is invented for this test.',
+    check: 'A study of 215 people aged 50 to 89 compared habitual knuckle crackers with people who didn’t crack their knuckles. Hand osteoarthritis was no more common among the crackers (18% against 22%).',
+    twist: 'A bone specialist talking about joints sounds right on topic. The tag was still the only support.',
+    truth: 'Not supported. In studies, people who crack their knuckles were no more likely to have arthritis in their hands.',
+    sources: [{ label: 'deWeber, Olszewski & Ortolano (2011), J Am Board Fam Med 24(2):169–174', url: 'https://doi.org/10.3122/jabfm.2011.02.100156' }],
+  },
+  {
+    id: 'o2', kind: 'opinion', type: 'shift',
+    statement: '“Organ donation should be opt-out: everyone is a donor unless they say no.”',
+    ask: 'How much do you agree?',
+    ...OPINION,
+  },
+  {
+    id: 'p3', kind: 'popularity', type: 'pick',
+    prompt: 'You’ll keep a printer for 3 years and print about 100 pages a month. Which costs less overall?',
+    options: [
+      { name: 'PrintEasy', lines: ['$60', 'Ink: 10¢ a page', '4.3 ★'], badge: 'Bestseller · 8,900 reviews' },
+      { name: 'InkSaver Pro', lines: ['$180', 'Ink: 2¢ a page', '4.4 ★'], badge: '260 reviews' },
+    ],
+    correct: 1, crowd: { option: 0 },
+    invented: 'Both printers and their numbers were invented for this test.',
+    twist: 'The low sticker price and the badge pointed one way. The running cost was printed on the card.',
+    truth: 'InkSaver Pro: $180 + $72 of ink = $252. PrintEasy: $60 + $360 of ink = $420.',
+    sources: [SALGANIK],
+  },
+  {
+    id: 'g2', kind: 'gut', type: 'number',
+    prompt: 'A shirt costs $50 after a 20% discount.',
+    ask: 'What was the price before the discount, in dollars?',
+    unit: 'dollars',
+    answer: 62.5, lure: 60,
+    twist: 'Adding 20% back to $50 gives $60. But the 20% was taken off the original price, which was bigger.',
+    truth: '$62.50. 20% off $62.50 is $12.50, which leaves $50.',
+    sources: [FREDERICK],
+    note: 'A new item in the style of the Cognitive Reflection Test.',
+  },
+];
+
+// Hard: the facts are in the small print, need several steps, or turn on
+// probability. The experts are in their own field. Still all on screen.
+const SET_H = [
+  {
+    id: 'p1', kind: 'popularity', type: 'pick',
+    prompt: 'You’ll keep a phone plan for 12 months. Both give 20 GB a month. Which costs less over the year?',
+    options: [
+      { name: 'Starter Deal', lines: ['$15 a month for the first 3 months', 'then $40 a month'], badge: 'Most popular deal · 41,000 sign-ups' },
+      { name: 'Steady 20', lines: ['$30 a month', 'fixed for 12 months'], badge: '1,900 sign-ups' },
+    ],
+    correct: 1, crowd: { option: 0 },
+    invented: 'Both plans and their numbers were invented for this test.',
+    twist: 'The headline price was the lowest, and the deal was the most popular. The rest of the year was in the second line.',
+    truth: 'Steady 20: $360 for the year. Starter Deal: 3 × $15 + 9 × $40 = $405.',
+    sources: [SALGANIK],
+  },
+  {
+    id: 'a1', kind: 'authority', type: 'rate',
+    tag: 'A family doctor with 20 years’ practice says',
+    claim: 'antibiotics help you get over a common cold faster.',
+    ask: 'How likely is this to be true?',
+    options: LIKELIHOOD, alongFrom: 2, invented: 'The family doctor is invented for this test.',
+    check: 'A Cochrane review pooled the randomised trials. People with a common cold who took antibiotics did no better than those given a placebo, and adults who took them had more side effects.',
+    twist: 'A doctor, in their own field, with long experience. The tag was still the only support given.',
+    truth: 'False: the trials found no benefit. Colds are caused by viruses, and antibiotics act on bacteria.',
+    sources: [{ label: 'Kenealy & Arroll (2013), Cochrane review, Antibiotics for the common cold and acute purulent rhinitis', url: 'https://doi.org/10.1002/14651858.CD000247.pub3' }],
+  },
+  {
+    id: 's1', kind: 'switching', type: 'switch',
+    prompt: 'A risk is 2% today. It could rise by 50%, or it could rise by 2 percentage points.',
+    ask: 'Which leaves the higher risk?',
+    options: ['50% rise', '2-point rise'],
+    correct: 1, crowd: { option: 0, pct: 70 },
+    invented: 'The 70% was invented for this test.',
+    twist: '“50%” sounds far bigger than “2”. The information didn’t change, only the headcount appeared.',
+    truth: 'The 2-point rise: 2% → 4%. A 50% rise is half of 2%, so 2% → 3%.',
+    sources: [ASCH, FRANZEN],
+  },
+  {
+    id: 'o1', kind: 'opinion', type: 'shift',
+    statement: '“Countries should stay on summer time all year round.”',
+    ask: 'How much do you agree?',
+    ...OPINION,
+  },
+  {
+    id: 'g1', kind: 'gut', type: 'number',
+    prompt: 'A book costs $10 plus half of its own price.',
+    ask: 'How much does the book cost, in dollars?',
+    unit: 'dollars',
+    answer: 20, lure: 15,
+    twist: '$10 plus half of $10 gives $15. But “half its own price” means half of the whole price, not of the $10.',
+    truth: '$20. Half of $20 is $10, and $10 + $10 = $20.',
+    sources: [FREDERICK],
+    note: 'A riddle in the style of the Cognitive Reflection Test. You may have met it before.',
+  },
+  {
+    id: 'p2', kind: 'popularity', type: 'pick',
+    prompt: 'You want to know whether a supplement lowers blood pressure. Which do you trust?',
+    options: [
+      { name: '“Users’ blood pressure was 8 points lower”', lines: ['Followed 100,000 people', 'Compared people who chose to take it with people who didn’t'], badge: 'Trending · 85,000 shares' },
+      { name: '“A small drop in blood pressure”', lines: ['15 trials pooled', 'People assigned at random'], badge: '300 shares' },
+    ],
+    correct: 1, crowd: { option: 0 },
+    invented: 'Both studies and their share counts were invented for this test.',
+    twist: 'Big study, big number, lots of shares. But people who choose supplements tend to eat better, smoke less and see doctors more, so the comparison can’t separate the pill from the person.',
+    truth: 'The pooled trials. Assigning people at random is what makes a fair comparison.',
+    sources: [SALGANIK],
+  },
+  {
+    id: 'pc', kind: 'popularity', type: 'pick', control: true,
+    prompt: 'You must be at the airport by 9:00. Which bus do you take?',
+    options: [
+      { name: 'Bus 12', lines: ['Leaves 7:50', 'Takes 75 minutes'] },
+      { name: 'Bus 40', lines: ['Leaves 8:05', 'Takes 50 minutes'] },
+    ],
+    correct: 1, crowd: { option: 0 },
+    invented: 'Both buses were invented for this test.',
+    twist: 'This one had no crowd cue at all. It shows how you choose when nobody’s choice is on display.',
+    truth: 'Bus 40 arrives at 8:55. Bus 12 leaves earlier but arrives at 9:05.',
+    sources: [],
+  },
+  {
+    id: 's2', kind: 'switching', type: 'switch',
+    prompt: '1 in 1,000 people has a condition. A test finds it 99% of the time, and wrongly says “yes” to 1% of people who don’t have it. Your test says “yes”.',
+    ask: 'Are you more likely to have the condition, or not?',
+    options: ['More likely to have it', 'More likely not to'],
+    correct: 1, crowd: { option: 0, pct: 75 },
+    invented: 'The 75% was invented for this test.',
+    twist: '“99%” makes a yes feel certain. The information didn’t change, only the headcount appeared.',
+    truth: 'More likely not. Out of 100,000 people, about 99 who have it test yes, and about 999 who don’t also test yes. So only about 9% of yeses have it.',
+    sources: [ASCH, FRANZEN],
+  },
+  {
+    id: 'a2', kind: 'authority', type: 'rate',
+    tag: 'A neuroscientist says',
+    claim: 'people are either left-brained (logical) or right-brained (creative).',
+    ask: 'How likely is this to be true?',
+    options: LIKELIHOOD, alongFrom: 2, invented: 'The neuroscientist is invented for this test.',
+    check: 'A brain-imaging study of 1,011 people aged 7 to 29 looked for people whose whole brain leaned left or right. Some functions do sit more on one side, but people didn’t fall into left- or right-brained types.',
+    twist: 'A brain scientist talking about the brain. The tag was still the only support.',
+    truth: 'Not supported. Some functions lean to one side, like language on the left for most people, but nobody’s whole brain is more “left” or “right”.',
+    sources: [{ label: 'Nielsen et al. (2013), PLOS ONE 8(8):e71275', url: 'https://doi.org/10.1371/journal.pone.0071275' }],
+  },
+  {
+    id: 'o2', kind: 'opinion', type: 'shift',
+    statement: '“Self-driving cars should be allowed on public roads today.”',
+    ask: 'How much do you agree?',
+    ...OPINION,
+  },
+  {
+    id: 'p3', kind: 'popularity', type: 'pick',
+    prompt: 'You’re flying one way with one checked bag. Which ticket costs less in total?',
+    options: [
+      { name: 'SkyLite', lines: ['$89 fare', 'Checked bag: $45 extra'], badge: 'Most booked · 12,000 this month' },
+      { name: 'Coastal Air', lines: ['$119 fare', 'One checked bag included'], badge: '700 this month' },
+    ],
+    correct: 1, crowd: { option: 0 },
+    invented: 'Both airlines and their numbers were invented for this test.',
+    twist: 'The fare and the badge pointed one way. The bag fee was on the second line.',
+    truth: 'Coastal Air: $119. SkyLite comes to $89 + $45 = $134.',
+    sources: [SALGANIK],
+  },
+  {
+    id: 'g2', kind: 'gut', type: 'number',
+    prompt: 'A shop raises a price by 25%, then cuts the new price by 20%.',
+    ask: 'By what percent has the price changed from the original?',
+    unit: 'percent',
+    answer: 0, lure: 5,
+    twist: '25 − 20 = 5 comes first. But the 20% is taken from a bigger number.',
+    truth: '0%. $100 → $125 → $100, because 20% of $125 is $25.',
+    sources: [FREDERICK],
+    note: 'A new item in the style of the Cognitive Reflection Test.',
+  },
+];
+
+// Levels share the same 12 slots and scoring; only how hard the facts are changes.
+// Easy has three sets so retakes stay fresh; medium and hard have one each, so a
+// retake there repeats it and is marked primed.
+export const LEVELS = {
+  easy: { name: 'Easy', blurb: 'The facts are plain to see.', sets: [SET_A, SET_B, SET_C] },
+  medium: { name: 'Medium', blurb: 'The facts take a little working out.', sets: [SET_M] },
+  hard: { name: 'Hard', blurb: 'The facts are in the small print or need several steps.', sets: [SET_H] },
+};
+export const LEVEL_ORDER = ['easy', 'medium', 'hard'];
+export const levelOf = (l) => (LEVELS[l] ? l : 'easy');
+
+// Each attempt gets the next unseen set at its level; once they're used up,
+// sets repeat and the attempt is marked primed.
+export const SETS = LEVELS.easy.sets;
 export const TASKS = SET_A;
-export const tasksFor = (set) => SETS[set % SETS.length];
+export const tasksFor = (set, level = 'easy') => {
+  const sets = LEVELS[levelOf(level)].sets;
+  return sets[set % sets.length];
+};
 
 // The group position shown in an opinion task: two steps away from the
 // person's first answer (0..4), toward whichever side has room.

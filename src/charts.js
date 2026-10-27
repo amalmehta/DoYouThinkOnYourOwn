@@ -1,12 +1,14 @@
 // The results-over-time chart and the typeset equations. Pure HTML/SVG
 // strings plus small wiring; no chart library.
 import { wilson, pct } from './scoring.js';
+import { LEVELS, levelOf } from './tasks.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const day = (iso) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
-// Herd rate per attempt: a dot at the rate with a whisker for its 95% range.
-// Primed attempts (a repeated question set) are hollow. One series, so no legend.
+// Herd rate per attempt at one level: a dot at the rate with a whisker for its
+// 95% range. Primed attempts (a repeated question set) are hollow. One series,
+// so no legend; levels get separate charts because their rates aren't comparable.
 export function renderTrend(history) {
   const rows = history.slice(-20).map((a, i) => {
     const r = a.herd.possible ? a.herd.along / a.herd.possible : null;
@@ -43,13 +45,23 @@ export function renderTrend(history) {
       <div class="tip" role="status" hidden></div>
     </div>
     <figcaption class="quiet">Dot: herd rate. Line through it: the likely range. Hollow: questions you’d already seen.</figcaption>
-    <details class="idea"><summary>Show as a table</summary>
-      <table class="trend-table">
-        <thead><tr><th>#</th><th>Date</th><th>Herd rate</th><th>Likely range</th><th>Opinion shift</th><th></th></tr></thead>
-        <tbody>${rows.map((a) => `<tr><td>${a.n}</td><td>${esc(day(a.date))}</td><td>${pct(a.rate)} (${a.herd.along}/${a.herd.possible})</td><td>${pct(a.range.low)}–${pct(a.range.high)}</td><td>${a.shift === null ? '—' : a.shift.toFixed(1)}</td><td>${a.primed ? 'primed' : ''}</td></tr>`).join('')}</tbody>
-      </table>
-    </details>
   </figure>`;
+}
+
+// Every attempt at every level, numbered in the order taken.
+export function renderTable(history) {
+  const rows = history.slice(-50).filter((a) => a.herd.possible);
+  if (!rows.length) return '';
+  return `
+  <details class="idea"><summary>Show all attempts as a table</summary>
+    <table class="trend-table">
+      <thead><tr><th>#</th><th>Date</th><th>Level</th><th>Herd rate</th><th>Likely range</th><th>Opinion shift</th><th></th></tr></thead>
+      <tbody>${rows.map((a, i) => {
+        const range = wilson(a.herd.along, a.herd.possible);
+        return `<tr><td>${i + 1}</td><td>${esc(day(a.date))}</td><td>${esc(LEVELS[levelOf(a.level)].name)}</td><td>${pct(a.herd.along / a.herd.possible)} (${a.herd.along}/${a.herd.possible})</td><td>${pct(range.low)}–${pct(range.high)}</td><td>${a.shift === null ? '—' : a.shift.toFixed(1)}</td><td>${a.primed ? 'primed' : ''}</td></tr>`;
+      }).join('')}</tbody>
+    </table>
+  </details>`;
 }
 
 // Hover and keyboard focus show the same tooltip.

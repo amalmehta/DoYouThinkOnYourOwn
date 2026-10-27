@@ -53,3 +53,6 @@
 
 5. **Prompt:** "Commit the working tree changes with a sensible message."
    **Led to:** two commits: the trait definitions, and the save warning with its tests.
+
+6. **Prompt:** "also make it possible to go backwards in questions. add an easy version (this is the easy version), medium, and hard"
+   **Led to:** questions on what makes a level harder, Back after the crowd is shown, how many sets, and history across levels. Answers: "Facts harder to work out", "Back, first answer locked", "1 set each for medium and hard", "Chart per level, one table". Built the level picker, 24 new questions (checked by a sub-agent, which corrected wording that overstated four sources and two mismatched cards), Back, a chart per level and a table with a Level column. Also fixed the switching reveal's key numbers, which didn't match the keys that pick them. Unit and UI tests added; all pass.

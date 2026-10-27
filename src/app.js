@@ -1,8 +1,8 @@
 // Screens and state. All content comes from tasks.js / aq10.js; all judging
 // from scoring.js. Nothing here talks to a network.
-import { TASKS, SETS, tasksFor, KINDS, KIND_ORDER, HERD_KINDS, AGREE5, groupFor } from './tasks.js';
+import { tasksFor, LEVELS, LEVEL_ORDER, levelOf, KINDS, KIND_ORDER, HERD_KINDS, AGREE5, groupFor } from './tasks.js';
 import { judge, stage, summarize, controlResult, encodeShare, decodeShare, countPhrase, herdRate, wilson, shiftSize, attemptRecord, mergeHistory, parseExport, pct } from './scoring.js';
-import { renderTrend, renderMath, wireTrend, wireMath } from './charts.js';
+import { renderTrend, renderTable, renderMath, wireTrend, wireMath } from './charts.js';
 import { AQ10, AQ10_OPTIONS, AQ10_CUTOFF, scoreAQ10 } from './aq10.js';
 import { load, save } from './store.js';
 
@@ -10,10 +10,13 @@ const main = document.getElementById('main');
 const settingsDialog = document.getElementById('settings');
 const toastEl = document.getElementById('toast');
 
-const fresh = () => ({ screen: 'intro', i: 0, set: 0, responses: {}, aq: [], aqI: 0, shared: null });
-// The question set for this attempt: 0, 1, 2 are fresh sets; 3 and up repeat them, primed.
-const cur = () => tasksFor(state.set);
-const getHistory = () => load('history', []).filter((h) => h && h.v === 3);
+const fresh = () => ({ screen: 'intro', i: 0, set: 0, level: levelOf(load('level', 'easy')), responses: {}, aq: [], aqI: 0, shared: null });
+// The question set for this attempt, counted per level: below the level's set
+// count it's fresh; at or above it repeats a set and is primed.
+const cur = () => tasksFor(state.set, state.level);
+const isPrimed = () => state.set >= LEVELS[state.level].sets.length;
+const getHistory = () => load('history', []).filter((h) => h && h.v === 3).map((h) => ({ ...h, level: levelOf(h.level) }));
+const attemptsAt = (level) => getHistory().filter((h) => h.level === level).length;
 let state = fresh();
 let settings = { theme: 'system', text: 'default', motion: 'system', ...load('settings', {}) };
 
@@ -54,7 +57,7 @@ function go(screen, patch = {}) {
 // ---------- intro ----------
 function renderIntro() {
   const progress = loadProgress();
-  const canResume = progress && progress.i < TASKS.length && Object.keys(progress.responses || {}).length > 0;
+  const canResume = progress && progress.i < 12 && Object.keys(progress.responses || {}).length > 0;
   const history = getHistory();
   return `
   <div class="card hero">
@@ -66,22 +69,29 @@ function renderIntro() {
       <li>${ICONS.twist}<span>Some questions hide a twist. Every one is explained at the end.</span></li>
       <li>${ICONS.lock}<span>Nothing leaves this device. No account, no tracking.</span></li>
     </ul>
+    <fieldset class="levels"><legend class="ask">Level</legend>
+      ${LEVEL_ORDER.map((l) => `<label class="opt"><input type="radio" name="level" value="${l}" ${state.level === l ? 'checked' : ''}><span class="dot"></span><span class="opt-body"><span class="pick-name">${LEVELS[l].name}</span><span class="pick-lines">${esc(LEVELS[l].blurb)}</span></span></label>`).join('')}
+    </fieldset>
     <div class="row">
       ${canResume
-        ? `<button class="btn" data-action="resume">Resume at ${progress.i + 1} of ${TASKS.length} <span class="kbd" aria-hidden="true">↵</span></button>
+        ? `<button class="btn" data-action="resume">Resume ${LEVELS[progress.level].name.toLowerCase()} at ${progress.i + 1} of 12 <span class="kbd" aria-hidden="true">↵</span></button>
            <button class="btn ghost" data-action="start">Start over</button>`
         : `<button class="btn" data-action="start">Start <span class="kbd" aria-hidden="true">↵</span></button>`}
     </div>
   </div>
-  ${renderHistory(history, 'intro')}`;
+  ${renderHistory(history, 'intro', state.level)}`;
 }
 
-// Past attempts: a chart once there are two, plus export and import.
-function renderHistory(history, where) {
-  const left = Math.max(0, SETS.length - history.length);
+// Past attempts: a chart for one level once it has two, a table of every
+// attempt, plus export and import.
+function renderHistory(history, where, level) {
+  const L = LEVELS[level];
+  const name = L.name.toLowerCase();
+  const mine = history.filter((a) => a.level === level);
+  const left = Math.max(0, L.sets.length - mine.length);
   const fresh = left
-    ? `Your next attempt uses ${left === SETS.length ? 'the first' : 'a fresh'} set of questions${left < SETS.length ? `, so it compares fairly with this one. ${left} fresh set${left === 1 ? '' : 's'} left.` : '.'}`
-    : 'You\u2019ve used all three question sets. Further attempts repeat questions and are marked primed.';
+    ? `Your next ${name} attempt uses a fresh set of questions${L.sets.length > 1 && left < L.sets.length ? `, so it compares fairly with this one. ${left} fresh set${left === 1 ? '' : 's'} left.` : '.'}`
+    : `You\u2019ve used ${L.sets.length === 1 ? 'the' : `all ${L.sets.length}`} ${name} question set${L.sets.length === 1 ? '' : 's'}. Further ${name} attempts repeat questions and are marked primed.`;
   const tools = `
     <div class="row data-tools">
       <button class="btn ghost small" data-action="export" ${history.length ? '' : 'disabled'}>${ICONS.down} Export</button>
@@ -91,21 +101,28 @@ function renderHistory(history, where) {
   if (!history.length) {
     return where === 'intro' ? `<div class="history quiet-block">${tools}</div>` : '';
   }
-  const body = history.length >= 2
-    ? renderTrend(history)
-    : `<p class="quiet">${where === 'intro' ? `One attempt so far: herd rate ${pct(history[0].herd.along / history[0].herd.possible)}.` : 'This is your first attempt.'} Take it again later and the chart of your results over time appears here.</p>`;
+  const body = mine.length >= 2
+    ? renderTrend(mine)
+    : mine.length === 1
+      ? `<p class="quiet">${where === 'intro' ? `One ${name} attempt so far: herd rate ${pct(mine[0].herd.along / mine[0].herd.possible)}.` : `This is your first ${name} attempt.`} Take it again later and the chart of your ${name} results over time appears here.</p>`
+      : `<p class="quiet">No ${name} attempts yet.</p>`;
+  const levelsUsed = new Set(history.map((a) => a.level)).size;
   return `
   <div class="history">
     <h2>Your results over time</h2>
+    ${levelsUsed > 1 || level !== 'easy' ? `<p class="quiet">Showing ${name}. Each level has its own chart, because a herd rate on harder questions isn\u2019t comparable with one on easier questions.</p>` : ''}
     ${body}
+    ${history.length >= 2 ? renderTable(history) : ''}
     <p class="quiet">${fresh}</p>
     ${tools}
   </div>`;
 }
 
 // ---------- tasks ----------
-const radio = (i, checked, inner, n = true) => `
-  <label class="opt"><input type="radio" name="opt" value="${i}" ${checked ? 'checked' : ''}><span class="dot"></span><span class="opt-body">${inner}</span>${n ? `<span class="num" aria-hidden="true">${i + 1}</span>` : ''}</label>`;
+// The number shown is the key that picks it: its place on screen, which can
+// differ from the option's index (the switching reveal lists Keep first).
+const radio = (i, checked, inner, key = i + 1) => `
+  <label class="opt"><input type="radio" name="opt" value="${i}" ${checked ? 'checked' : ''}><span class="dot"></span><span class="opt-body">${inner}</span>${key ? `<span class="num" aria-hidden="true">${key}</span>` : ''}</label>`;
 
 function pickOption(o) {
   return `<span class="pick-name">${esc(o.name)}</span><span class="pick-lines">${o.lines.map(esc).join(' · ')}</span>${o.badge ? `<span class="badge">${esc(o.badge)}</span>` : ''}`;
@@ -122,7 +139,8 @@ function renderTask() {
   const r = state.responses[t.id] || {};
   const st = stage(t, r);
   const n = state.i + 1;
-  const pct = (state.i / TASKS.length) * 100;
+  const total = cur().length;
+  const pct = (state.i / total) * 100;
   let body = '';
 
   if (t.type === 'rate') {
@@ -151,11 +169,11 @@ function renderTask() {
       const crowdName = t.options[t.crowd.option];
       body = `
         <p class="tag">${esc(t.prompt)} ${esc(t.ask)}</p>
-        <p class="yours">You chose <b>${esc(t.options[r.first])}</b>.</p>
+        <p class="yours">You chose <b>${esc(t.options[r.first])}</b>. <span class="quiet">Locked now that you\u2019ve seen what others chose.</span></p>
         <div class="crowd" tabindex="-1" data-focus><span>${t.crowd.pct}% of people who answered chose ${esc(crowdName)}.</span><div class="track"><div class="fill" style="width:${t.crowd.pct}%"></div></div></div>
         <fieldset class="options two"><legend class="ask">Your final answer?</legend>
-          ${radio(r.first, r.final === r.first, `Keep ${esc(t.options[r.first])}`)}
-          ${radio(other, r.final === other, `Change to ${esc(t.options[other])}`)}
+          ${radio(r.first, r.final === r.first, `Keep ${esc(t.options[r.first])}`, 1)}
+          ${radio(other, r.final === other, `Change to ${esc(t.options[other])}`, 2)}
         </fieldset>`;
     }
   } else if (t.type === 'shift') {
@@ -169,7 +187,7 @@ function renderTask() {
       const marks = { [r.first]: 'your answer', [g]: 'most people' };
       body = `
         <p class="tag">${esc(t.statement)}</p>
-        <div class="crowd" tabindex="-1" data-focus><span>Most people who answered said <b>${esc(AGREE5[g])}</b>. You said ${esc(AGREE5[r.first])}.</span></div>
+        <div class="crowd" tabindex="-1" data-focus><span>Most people who answered said <b>${esc(AGREE5[g])}</b>. You said ${esc(AGREE5[r.first])}, which is now locked.</span></div>
         <p class="ask">Where do you land now?</p>
         ${scale(r.final, marks)}`;
     }
@@ -180,12 +198,13 @@ function renderTask() {
       <div class="numfield"><input id="num" name="num" type="text" inputmode="decimal" autocomplete="off" maxlength="12" value="${esc(r.value ?? '')}" aria-describedby="num-prompt num-unit"><span id="num-unit" class="quiet">${esc(t.unit)}</span></div>`;
   }
 
-  const last = n === TASKS.length && st !== 'first';
+  const last = n === total && st !== 'first';
   return `
   <div class="card">
-    <div class="progress" aria-label="Question ${n} of ${TASKS.length}"><div class="track"><div class="fill" style="width:${pct}%"></div></div><span>${n} of ${TASKS.length}</span></div>
+    <div class="progress" aria-label="Question ${n} of ${total}, ${LEVELS[state.level].name.toLowerCase()} level"><div class="track"><div class="fill" style="width:${pct}%"></div></div><span>${n} of ${total}</span></div>
     <div class="stack">${body}</div>
     <div class="task-foot">
+      <button class="btn link" data-action="back" ${state.i === 0 ? 'disabled' : ''}>Back</button>
       ${t.type === 'rate' && !r.checked ? `<button class="btn ghost" data-action="check">${ICONS.search} Check the source</button>` : ''}
       <span class="spacer"></span>
       <button class="btn" data-action="next" id="next">${last ? 'See results' : 'Next'} <span class="kbd" aria-hidden="true">↵</span></button>
@@ -198,7 +217,7 @@ function metricsBlock() {
   if (!h.possible) return '';
   const range = wilson(h.along, h.possible);
   const shift = shiftSize(state.responses, cur());
-  const primed = state.set >= SETS.length;
+  const primed = isPrimed();
   return `
     <div class="metric">
       <div class="metric-main">
@@ -228,11 +247,20 @@ function syncNext() {
 // Progress from an older question set is ignored rather than resumed into the wrong questions.
 function loadProgress() {
   const p = load('progress', null);
-  return p && p.v === 3 && Number.isInteger(p.set) ? p : null;
+  return p && p.v === 3 && Number.isInteger(p.set) ? { ...p, level: levelOf(p.level) } : null;
 }
 
 function saveProgress() {
-  save('progress', { v: 3, set: state.set, i: state.i, responses: state.responses });
+  save('progress', { v: 3, level: state.level, set: state.set, i: state.i, responses: state.responses });
+}
+
+// Back always goes to the previous question. A two-step answer whose crowd was
+// already shown keeps its locked first answer; only the second step can change.
+function back() {
+  if (state.i === 0) return;
+  state.i -= 1;
+  saveProgress();
+  render();
 }
 
 function next() {
@@ -253,7 +281,7 @@ function next() {
     return;
   }
   const history = getHistory();
-  history.push(attemptRecord(state.responses, state.set % SETS.length, state.set >= SETS.length, cur()));
+  history.push(attemptRecord(state.responses, state.set % LEVELS[state.level].sets.length, isPrimed(), cur(), new Date(), state.level));
   const saved = save('history', history.slice(-200));
   save('progress', undefined);
   go('results');
@@ -338,6 +366,7 @@ function renderResults() {
   <div class="stack-lg">
     <div class="stack">
       <h1 tabindex="-1" data-focus>Where you followed the herd</h1>
+      <p class="level-line">${LEVELS[state.level].name} level</p>
       <p class="lede">Each count comes from 2–3 questions, so one careless tap changes it. Read it as a mirror, not a measurement. Open any moment to see what was going on.</p>
     </div>
     ${metricsBlock()}
@@ -350,7 +379,7 @@ function renderResults() {
       <div class="kinds">${others.map((k) => kindCard(k, counts[k])).join('')}</div>
     </div>
     ${sections}
-    ${renderHistory(getHistory(), 'results')}
+    ${renderHistory(getHistory(), 'results', state.level)}
     <div class="callout">
       <h3>The habit underneath</h3>
       <p>Each time you went along, something other than the facts was doing the persuading: a review count, a headcount, the group’s number, a title, or the speed of an answer. Next time you feel sure, name what made you sure, then ask whether it’s evidence.</p>
@@ -506,7 +535,8 @@ async function copy(text) {
 function start(fromScratch) {
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   if (fromScratch) save('progress', undefined);
-  state = { ...fresh(), set: getHistory().length };
+  const level = fresh().level;
+  state = { ...fresh(), level, set: attemptsAt(level) };
   go('task');
 }
 
@@ -524,9 +554,10 @@ document.addEventListener('click', async (e) => {
   else if (a === 'resume') {
     const p = loadProgress();
     if (!p) return start(true);
-    state = { ...fresh(), set: p.set, i: p.i, responses: p.responses || {} };
+    state = { ...fresh(), level: p.level, set: p.set, i: p.i, responses: p.responses || {} };
     go('task');
   } else if (a === 'next') next();
+  else if (a === 'back') back();
   else if (a === 'check') {
     const t = cur()[state.i];
     state.responses[t.id] = { ...(state.responses[t.id] || {}), checked: true };
@@ -626,7 +657,14 @@ document.addEventListener('paste', (e) => {
 
 let aqTimer;
 main.addEventListener('change', (e) => {
-  if (e.target.name === 'opt') {
+  if (e.target.name === 'level') {
+    state.level = levelOf(e.target.value);
+    save('level', state.level);
+    // Only the history below the card depends on the level; redraw it in place.
+    const old = main.querySelector('.history');
+    if (old) old.outerHTML = renderHistory(getHistory(), 'intro', state.level);
+    wireTrend(main);
+  } else if (e.target.name === 'opt') {
     const t = cur()[state.i];
     const r = state.responses[t.id] || {};
     const v = Number(e.target.value);

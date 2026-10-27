@@ -1,5 +1,5 @@
 // Pure judging and summarising. No DOM, so it runs in node:test too.
-import { TASKS, KIND_ORDER, HERD_KINDS, groupFor } from './tasks.js';
+import { TASKS, KIND_ORDER, HERD_KINDS, groupFor, levelOf } from './tasks.js';
 
 export const ALONG = 'along';
 export const NOT = 'not';
@@ -161,11 +161,13 @@ export function shiftSize(responses, tasks = TASKS) {
 }
 
 // One attempt as stored in history and in export files.
-export function attemptRecord(responses, set, primed, tasks = TASKS, date = new Date()) {
+// Records from before levels existed have no level and read as easy.
+export function attemptRecord(responses, set, primed, tasks = TASKS, date = new Date(), level = 'easy') {
   const h = herdRate(responses, tasks);
   return {
     v: 3,
     date: date.toISOString(),
+    level: levelOf(level),
     set,
     primed,
     counts: summarize(responses, tasks),
@@ -180,6 +182,7 @@ export function cleanAttempt(a, tasks = TASKS) {
   const date = new Date(a.date);
   if (Number.isNaN(date.getTime())) return null;
   if (!Number.isInteger(a.set) || a.set < 0 || a.set > 99) return null;
+  if (a.level !== undefined && levelOf(a.level) !== a.level) return null;
   const empty = summarize({}, tasks);
   const counts = {};
   for (const k of KIND_ORDER) {
@@ -191,7 +194,7 @@ export function cleanAttempt(a, tasks = TASKS) {
   if (!Number.isInteger(h.possible) || !Number.isInteger(h.along) || h.along < 0 || h.along > h.possible || h.possible > 7) return null;
   const shift = a.shift === null ? null : Number(a.shift);
   if (shift !== null && !(shift >= -2 && shift <= 2)) return null;
-  return { v: 3, date: date.toISOString(), set: a.set, primed: !!a.primed, counts, herd: { along: h.along, possible: h.possible }, shift };
+  return { v: 3, date: date.toISOString(), level: levelOf(a.level), set: a.set, primed: !!a.primed, counts, herd: { along: h.along, possible: h.possible }, shift };
 }
 
 // Merge imported attempts into history, skipping any already there (same date).

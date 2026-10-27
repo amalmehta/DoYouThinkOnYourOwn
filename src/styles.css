@@ -294,3 +294,11 @@ body.dropping::after {
   border: 2px dashed var(--accent); border-radius: 18px; background: color-mix(in srgb, var(--bg) 88%, transparent);
   font: 500 1.1rem var(--sans); color: var(--accent); pointer-events: none; z-index: 10;
 }
+
+/* Level picker on the intro, and the level line on results */
+.levels { border: none; padding: 0; margin: 4px 0 0; min-width: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.levels > legend { padding: 0; margin-bottom: 10px; }
+.levels .opt { align-items: flex-start; padding: 14px; }
+.levels .opt .dot { margin-top: 3px; }
+@media (max-width: 560px) { .levels { grid-template-columns: 1fr; } }
+.level-line { color: var(--muted); font-size: 0.92rem; margin-top: -4px; }
