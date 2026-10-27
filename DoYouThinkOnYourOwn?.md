@@ -413,7 +413,11 @@ Definitions (revised 2026-10-27: herd-first, after the user said the survey shou
   - Opinion shift: rated a statement on a 5-point scale, was shown a group position exactly two steps away, and moved closer to it.
   - Authority: rated a false, expert-tagged claim "Likely" or "Very likely".
   - First impression: gave the tempting answer (e.g. 20 not 10). Other wrong answers count as "neither".
-- Result: herd counts first ("went along N of M" per kind), the control line beneath, then authority and first impression "for comparison". No labels, levels or total.
+- Result: herd counts first ("went along N of M" per kind), the control line beneath, then authority and first impression "for comparison". No labels or levels.
+- Herd rate (added 2026-10-27 at the user's request for quantitative metrics): r = k / n, where k = herd questions where you went along and n = herd questions where going along was possible (excludes the control and switching questions whose first answer already matched the crowd). Shown as a percentage with the count behind it.
+- Likely range: 95% Wilson score interval on r (z = 1.96). Shown beside every herd rate.
+- Opinion shift: mean over the 2 opinion questions of (2 − |final − group|), in scale steps, from −2 (moved all the way away) to 2 (moved all the way to the group).
+- Results over time: every completed attempt is stored in this browser (date, set, primed, counts, herd k and n, shift), up to 200. Attempts 1–3 use question sets A, B, C; attempt 4 on repeats them and is marked primed. Shown as a chart (herd rate with range per attempt, hollow if primed) and a table. Export/Import as a JSON file (upload button, drop anywhere, paste); duplicates by date are skipped and malformed attempts rejected.
 - Authority wording: say what happened, not why.
 - Autism: optional separate AQ-10 section (Allison et al. 2012). One point per item scored per the published key; 6 or more = "worth discussing with a clinician". Labelled a screener, not a diagnosis. Never mixed into the main result.
 - Done: every flow passes unit + UI tests in light/dark and at phone and desktop sizes, all facts cited and checked, live on GitHub Pages.
@@ -422,7 +426,7 @@ Deferred (proposals, not built):
 - Untagged control claims to estimate an authority effect within a person.
 - Replacing the two first-impression puzzles, which are reworded versions of widely known CRT items (see docs/RESEARCH.md).
 - Collecting answers across people (needs a backend and consent).
-- Randomised task order and alternate task sets for retakes.
+- Randomised task order.
 - Mac app wrapper.
 
 OPEN QUESTIONS / ASSUMPTIONS:
@@ -437,6 +441,7 @@ CHANGELOG:
 
 - 2026-10-27 — created
 - 2026-10-27 — interview answers, definitions, deferred list and deliverables filled in
+- 2026-10-27 — added quantitative metrics (herd rate with 95% Wilson range, opinion shift size), results over time (chart, table, export/import) and three question sets so retakes aren't primed
 - 2026-10-27 — refocused on herd mentality: 8 of 12 tasks test popularity, switching and opinion shift, with an answer-alone-first step and a no-crowd control; instructions tasks dropped
 - 2026-10-27 — first version built and published (PR #1); facts corrected after source check (head heat ≤10%, 2026 population figures, CIA Factbook sources replaced)
 - 2026-10-27 — added docs/RESEARCH.md: cited review of CRT, CRT-2, AOT, NCS-6/18, Bullshit Receptivity and Asch conformity, plus free online tests; recommends writing our own tasks with adapted controls

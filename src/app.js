@@ -1,7 +1,8 @@
 // Screens and state. All content comes from tasks.js / aq10.js; all judging
 // from scoring.js. Nothing here talks to a network.
-import { TASKS, KINDS, KIND_ORDER, HERD_KINDS, AGREE5, groupFor } from './tasks.js';
-import { judge, stage, summarize, controlResult, encodeShare, decodeShare, countPhrase } from './scoring.js';
+import { TASKS, SETS, tasksFor, KINDS, KIND_ORDER, HERD_KINDS, AGREE5, groupFor } from './tasks.js';
+import { judge, stage, summarize, controlResult, encodeShare, decodeShare, countPhrase, herdRate, wilson, shiftSize, attemptRecord, mergeHistory, parseExport, pct } from './scoring.js';
+import { renderTrend, renderMath, wireTrend, wireMath } from './charts.js';
 import { AQ10, AQ10_OPTIONS, AQ10_CUTOFF, scoreAQ10 } from './aq10.js';
 import { load, save } from './store.js';
 
@@ -9,7 +10,10 @@ const main = document.getElementById('main');
 const settingsDialog = document.getElementById('settings');
 const toastEl = document.getElementById('toast');
 
-const fresh = () => ({ screen: 'intro', i: 0, responses: {}, aq: [], aqI: 0, shared: null });
+const fresh = () => ({ screen: 'intro', i: 0, set: 0, responses: {}, aq: [], aqI: 0, shared: null });
+// The question set for this attempt: 0, 1, 2 are fresh sets; 3 and up repeat them, primed.
+const cur = () => tasksFor(state.set);
+const getHistory = () => load('history', []).filter((h) => h && h.v === 3);
 let state = fresh();
 let settings = { theme: 'system', text: 'default', motion: 'system', ...load('settings', {}) };
 
@@ -21,6 +25,8 @@ const ICONS = {
   lock: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>',
   twist: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h11l-3-3M20 16H9l3 3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   search: '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  down: '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  up: '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4m0 0-4 4m4-4 4 4M5 20h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   link: '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
 };
 const heroArt = '<img class="hero-art" src="assets/icon.svg" alt="">';
@@ -36,6 +42,8 @@ function render() {
   if (focusEl) focusEl.focus({ preventScroll: true });
   window.scrollTo({ top: 0 });
   if (state.screen === 'task') syncNext();
+  wireTrend(main);
+  wireMath(main);
 }
 
 function go(screen, patch = {}) {
@@ -47,7 +55,7 @@ function go(screen, patch = {}) {
 function renderIntro() {
   const progress = loadProgress();
   const canResume = progress && progress.i < TASKS.length && Object.keys(progress.responses || {}).length > 0;
-  const history = load('history', []).filter((h) => h.v === 2);
+  const history = getHistory();
   return `
   <div class="card hero">
     ${heroArt}
@@ -65,14 +73,34 @@ function renderIntro() {
         : `<button class="btn" data-action="start">Start <span class="kbd" aria-hidden="true">↵</span></button>`}
     </div>
   </div>
-  ${history.length ? `
+  ${renderHistory(history, 'intro')}`;
+}
+
+// Past attempts: a chart once there are two, plus export and import.
+function renderHistory(history, where) {
+  const left = Math.max(0, SETS.length - history.length);
+  const fresh = left
+    ? `Your next attempt uses ${left === SETS.length ? 'the first' : 'a fresh'} set of questions${left < SETS.length ? `, so it compares fairly with this one. ${left} fresh set${left === 1 ? '' : 's'} left.` : '.'}`
+    : 'You\u2019ve used all three question sets. Further attempts repeat questions and are marked primed.';
+  const tools = `
+    <div class="row data-tools">
+      <button class="btn ghost small" data-action="export" ${history.length ? '' : 'disabled'}>${ICONS.down} Export</button>
+      <button class="btn ghost small" data-action="import">${ICONS.up} Import</button>
+      <span class="quiet">or drop or paste a results file anywhere</span>
+    </div>`;
+  if (!history.length) {
+    return where === 'intro' ? `<div class="history quiet-block">${tools}</div>` : '';
+  }
+  const body = history.length >= 2
+    ? renderTrend(history)
+    : `<p class="quiet">${where === 'intro' ? `One attempt so far: herd rate ${pct(history[0].herd.along / history[0].herd.possible)}.` : 'This is your first attempt.'} Take it again later and the chart of your results over time appears here.</p>`;
+  return `
   <div class="history">
-    <h2>Your past results</h2>
-    <ul>${history.slice().reverse().slice(0, 8).map((h) => `
-      <li><span>${esc(new Date(h.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))}</span>
-      <span class="mini">${KIND_ORDER.map((k) => `<span data-kind="${k}"><span class="kdot"></span>${esc(KINDS[k].name)} ${h.counts[k].along}/${h.counts[k].total}</span>`).join('')}</span></li>`).join('')}
-    </ul>
-  </div>` : ''}`;
+    <h2>Your results over time</h2>
+    ${body}
+    <p class="quiet">${fresh}</p>
+    ${tools}
+  </div>`;
 }
 
 // ---------- tasks ----------
@@ -90,7 +118,7 @@ function scale(selected, marks = {}) {
 }
 
 function renderTask() {
-  const t = TASKS[state.i];
+  const t = cur()[state.i];
   const r = state.responses[t.id] || {};
   const st = stage(t, r);
   const n = state.i + 1;
@@ -165,6 +193,25 @@ function renderTask() {
   </div>`;
 }
 
+function metricsBlock() {
+  const h = herdRate(state.responses, cur());
+  if (!h.possible) return '';
+  const range = wilson(h.along, h.possible);
+  const shift = shiftSize(state.responses, cur());
+  const primed = state.set >= SETS.length;
+  return `
+    <div class="metric">
+      <div class="metric-main">
+        <span class="hero-num">${pct(h.rate)}</span>
+        <span><b>Herd rate.</b> You went along on ${h.along} of the ${h.possible} herd questions where it was possible.</span>
+      </div>
+      <p class="quiet">Likely range ${pct(range.low)}\u2013${pct(range.high)} (95%). That\u2019s wide because ${h.possible} questions is a small sample.</p>
+      ${shift === null ? '' : `<p><b>Opinion shift:</b> ${shift > 0 ? `moved ${shift.toFixed(1)} step${shift === 1 ? '' : 's'} toward the group on average, out of 2` : shift < 0 ? `moved ${Math.abs(shift).toFixed(1)} away from the group on average` : 'stayed where you were'}.</p>`}
+      ${primed ? '<p class="invented">These were questions you\u2019d seen before, so this attempt is primed and marked that way in your history.</p>' : ''}
+      ${renderMath(h, range, shift)}
+    </div>`;
+}
+
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 function canAdvance(t, r) {
@@ -173,7 +220,7 @@ function canAdvance(t, r) {
 }
 
 function syncNext() {
-  const t = TASKS[state.i];
+  const t = cur()[state.i];
   const btn = document.getElementById('next');
   if (btn) btn.disabled = !canAdvance(t, state.responses[t.id]);
 }
@@ -181,15 +228,15 @@ function syncNext() {
 // Progress from an older question set is ignored rather than resumed into the wrong questions.
 function loadProgress() {
   const p = load('progress', null);
-  return p && p.v === 2 ? p : null;
+  return p && p.v === 3 && Number.isInteger(p.set) ? p : null;
 }
 
 function saveProgress() {
-  save('progress', { v: 2, i: state.i, responses: state.responses });
+  save('progress', { v: 3, set: state.set, i: state.i, responses: state.responses });
 }
 
 function next() {
-  const t = TASKS[state.i];
+  const t = cur()[state.i];
   const r = state.responses[t.id];
   if (!canAdvance(t, r)) return;
   if (stage(t, r) === 'first') {
@@ -199,16 +246,15 @@ function next() {
     render();
     return;
   }
-  if (state.i < TASKS.length - 1) {
+  if (state.i < cur().length - 1) {
     state.i += 1;
     saveProgress();
     render();
     return;
   }
-  const counts = summarize(state.responses);
-  const history = load('history', []);
-  history.push({ v: 2, date: new Date().toISOString(), counts });
-  save('history', history.slice(-50));
+  const history = getHistory();
+  history.push(attemptRecord(state.responses, state.set % SETS.length, state.set >= SETS.length, cur()));
+  save('history', history.slice(-200));
   save('progress', undefined);
   go('results');
 }
@@ -274,7 +320,7 @@ function controlLine(ok) {
 }
 
 function renderResults() {
-  const counts = summarize(state.responses);
+  const counts = summarize(state.responses, cur());
   const sections = KIND_ORDER.map((k) => {
     const K = KINDS[k];
     return `
@@ -283,7 +329,7 @@ function renderResults() {
       <details class="idea"><summary>Why people go along, and when it’s fine</summary>
         <div class="body"><p>${esc(K.idea)}</p><p>${esc(K.fails)}</p><p class="principle">${esc(K.principle)}</p></div>
       </details>
-      <ul class="moments">${TASKS.filter((t) => t.kind === k).map(renderMoment).join('')}</ul>
+      <ul class="moments">${cur().filter((t) => t.kind === k).map(renderMoment).join('')}</ul>
     </section>`;
   }).join('');
   const others = KIND_ORDER.filter((k) => !HERD_KINDS.includes(k));
@@ -293,15 +339,17 @@ function renderResults() {
       <h1 tabindex="-1" data-focus>Where you followed the herd</h1>
       <p class="lede">Each count comes from 2–3 questions, so one careless tap changes it. Read it as a mirror, not a measurement. Open any moment to see what was going on.</p>
     </div>
+    ${metricsBlock()}
     <div class="stack">
       <div class="kinds three">${HERD_KINDS.map((k) => kindCard(k, counts[k])).join('')}</div>
-      ${controlLine(controlResult(state.responses))}
+      ${controlLine(controlResult(state.responses, cur()))}
     </div>
     <div class="stack">
       <h2 class="sub">For comparison</h2>
       <div class="kinds">${others.map((k) => kindCard(k, counts[k])).join('')}</div>
     </div>
     ${sections}
+    ${renderHistory(getHistory(), 'results')}
     <div class="callout">
       <h3>The habit underneath</h3>
       <p>Each time you went along, something other than the facts was doing the persuading: a review count, a headcount, the group’s number, a title, or the speed of an answer. Next time you feel sure, name what made you sure, then ask whether it’s evidence.</p>
@@ -405,13 +453,14 @@ function openSettings() {
     const el = settingsDialog.querySelector(`input[name="${key}"][value="${settings[key]}"]`);
     if (el) el.checked = true;
   }
-  const n = load('history', []).length;
+  const n = getHistory().length;
   settingsDialog.querySelector('#data-note').textContent = n
     ? `${n} past result${n === 1 ? '' : 's'}, kept in this browser only.`
     : 'No past results yet. They’re kept in this browser only.';
   const clear = settingsDialog.querySelector('[data-action="clear-history"]');
   clear.textContent = 'Clear past results';
   clear.disabled = n === 0;
+  settingsDialog.querySelector('[data-action="export"]').disabled = n === 0;
   delete clear.dataset.armed;
   if (!settingsDialog.open) settingsDialog.showModal();
 }
@@ -456,7 +505,7 @@ async function copy(text) {
 function start(fromScratch) {
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   if (fromScratch) save('progress', undefined);
-  state = fresh();
+  state = { ...fresh(), set: getHistory().length };
   go('task');
 }
 
@@ -474,11 +523,11 @@ document.addEventListener('click', async (e) => {
   else if (a === 'resume') {
     const p = loadProgress();
     if (!p) return start(true);
-    state = { ...fresh(), i: p.i, responses: p.responses || {} };
+    state = { ...fresh(), set: p.set, i: p.i, responses: p.responses || {} };
     go('task');
   } else if (a === 'next') next();
   else if (a === 'check') {
-    const t = TASKS[state.i];
+    const t = cur()[state.i];
     state.responses[t.id] = { ...(state.responses[t.id] || {}), checked: true };
     saveProgress();
     el.remove();
@@ -487,10 +536,12 @@ document.addEventListener('click', async (e) => {
     panel.innerHTML = `<b>What the research says.</b> ${esc(t.check)}`;
     main.querySelector('.stack').appendChild(panel);
   } else if (a === 'share') {
-    const url = location.origin + location.pathname + '#r=' + encodeShare(summarize(state.responses));
+    const url = location.origin + location.pathname + '#r=' + encodeShare(summarize(state.responses, cur()));
     toast((await copy(url)) ? 'Link copied. It holds only your four counts.' : 'Couldn’t copy. Your browser blocked the clipboard.');
   } else if (a === 'again') start(true);
   else if (a === 'settings') openSettings();
+  else if (a === 'export') exportResults();
+  else if (a === 'import') filePicker.click();
   else if (a === 'clear-history') {
     if (!el.dataset.armed) {
       el.dataset.armed = '1';
@@ -507,10 +558,75 @@ document.addEventListener('click', async (e) => {
   else if (a === 'aq-back') go('results');
 });
 
+// ---------- export / import ----------
+function exportResults() {
+  const history = getHistory();
+  if (!history.length) return;
+  const data = { app: 'DoYouThinkOnYourOwn', version: 3, exported: new Date().toISOString(), attempts: history };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Do You Think On Your Own results.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(`Exported ${history.length} attempt${history.length === 1 ? '' : 's'}.`);
+}
+
+function importText(text) {
+  const parsed = parseExport(text);
+  if (!parsed) {
+    toast('That file isn\u2019t a Do You Think On Your Own results file.');
+    return;
+  }
+  const { merged, added, skipped } = mergeHistory(getHistory(), parsed.attempts);
+  if (!save('history', merged.slice(-200))) {
+    toast('This browser is blocking storage, so results can\u2019t be saved here.');
+    return;
+  }
+  const extra = [skipped && `${skipped} already here`, parsed.rejected && `${parsed.rejected} unreadable`].filter(Boolean).join(', ');
+  toast(`Imported ${added} attempt${added === 1 ? '' : 's'}${extra ? ` (${extra})` : ''}.`);
+  if (settingsDialog.open) openSettings();
+  if (state.screen === 'intro' || state.screen === 'results') render();
+}
+
+async function importFile(file) {
+  if (!file) return;
+  if (file.size > 1_000_000) { toast('That file is too big to be a results file.'); return; }
+  try { importText(await file.text()); } catch { toast('Couldn\u2019t read that file.'); }
+}
+
+const filePicker = Object.assign(document.createElement('input'), { type: 'file', accept: '.json,application/json', hidden: true });
+filePicker.addEventListener('change', () => { importFile(filePicker.files[0]); filePicker.value = ''; });
+document.body.appendChild(filePicker);
+
+// Drop a file anywhere on the window.
+document.addEventListener('dragover', (e) => {
+  if ([...(e.dataTransfer?.types || [])].includes('Files')) { e.preventDefault(); document.body.classList.add('dropping'); }
+});
+document.addEventListener('dragleave', (e) => { if (!e.relatedTarget) document.body.classList.remove('dropping'); });
+document.addEventListener('drop', (e) => {
+  document.body.classList.remove('dropping');
+  const file = e.dataTransfer?.files?.[0];
+  if (!file) return;
+  e.preventDefault();
+  importFile(file);
+});
+
+// Paste a results file (or its text) with ⌘V, except while typing an answer.
+document.addEventListener('paste', (e) => {
+  if (e.target.matches?.('input[type="text"]')) return;
+  const file = e.clipboardData?.files?.[0];
+  if (file) { e.preventDefault(); importFile(file); return; }
+  const text = e.clipboardData?.getData('text/plain') || '';
+  if (text.includes('"DoYouThinkOnYourOwn"')) { e.preventDefault(); importText(text); }
+});
+
 let aqTimer;
 main.addEventListener('change', (e) => {
   if (e.target.name === 'opt') {
-    const t = TASKS[state.i];
+    const t = cur()[state.i];
     const r = state.responses[t.id] || {};
     const v = Number(e.target.value);
     const field = t.type === 'switch' || t.type === 'shift' ? (stage(t, r) === 'first' ? 'draft' : 'final') : 'choice';
@@ -531,7 +647,7 @@ main.addEventListener('change', (e) => {
 
 main.addEventListener('input', (e) => {
   if (e.target.name !== 'num') return;
-  const t = TASKS[state.i];
+  const t = cur()[state.i];
   state.responses[t.id] = { value: e.target.value };
   saveProgress();
   syncNext();

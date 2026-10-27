@@ -1,5 +1,5 @@
 // Pure judging and summarising. No DOM, so it runs in node:test too.
-import { TASKS, KIND_ORDER, groupFor } from './tasks.js';
+import { TASKS, KIND_ORDER, HERD_KINDS, groupFor } from './tasks.js';
 
 export const ALONG = 'along';
 export const NOT = 'not';
@@ -117,3 +117,108 @@ export function countPhrase({ along, total }) {
   if (along === total) return `Went along every time (${along} of ${total})`;
   return `Went along ${along} of ${total} times`;
 }
+
+// ---------- metrics ----------
+
+// Herd rate: went along / herd questions where going along was possible.
+// "Possible" leaves out the control and any switching question whose first
+// answer already matched the crowd (judged neither).
+export function herdRate(responses, tasks = TASKS) {
+  let along = 0;
+  let possible = 0;
+  for (const t of tasks) {
+    if (t.control || !HERD_KINDS.includes(t.kind)) continue;
+    const v = judge(t, responses[t.id]);
+    if (v === ALONG || v === NOT) possible += 1;
+    if (v === ALONG) along += 1;
+  }
+  return { along, possible, rate: possible ? along / possible : null };
+}
+
+// 95% Wilson score interval for k successes in n trials. Better than
+// p ± 1.96·SE at small n: it never leaves 0–1 and isn't zero-width at 0 or n.
+export function wilson(k, n, z = 1.96) {
+  if (!n) return null;
+  const p = k / n;
+  const z2 = z * z;
+  const denom = 1 + z2 / n;
+  const centre = (p + z2 / (2 * n)) / denom;
+  const half = (z * Math.sqrt((p * (1 - p)) / n + z2 / (4 * n * n))) / denom;
+  return { low: Math.max(0, centre - half), high: Math.min(1, centre + half) };
+}
+
+// Opinion shift: average steps moved toward the group (−2 to 2). The group is
+// always shown 2 steps from the first answer, so 2 means "moved all the way".
+export function shiftSize(responses, tasks = TASKS) {
+  const moves = [];
+  for (const t of tasks) {
+    if (t.type !== 'shift') continue;
+    const r = responses[t.id];
+    if (judge(t, r) === null) continue;
+    moves.push(2 - Math.abs(r.final - groupFor(r.first)));
+  }
+  return moves.length ? moves.reduce((a, b) => a + b, 0) / moves.length : null;
+}
+
+// One attempt as stored in history and in export files.
+export function attemptRecord(responses, set, primed, tasks = TASKS, date = new Date()) {
+  const h = herdRate(responses, tasks);
+  return {
+    v: 3,
+    date: date.toISOString(),
+    set,
+    primed,
+    counts: summarize(responses, tasks),
+    herd: { along: h.along, possible: h.possible },
+    shift: shiftSize(responses, tasks),
+  };
+}
+
+// Validate one attempt read from an import file; returns a clean copy or null.
+export function cleanAttempt(a, tasks = TASKS) {
+  if (!a || typeof a !== 'object' || a.v !== 3) return null;
+  const date = new Date(a.date);
+  if (Number.isNaN(date.getTime())) return null;
+  if (!Number.isInteger(a.set) || a.set < 0 || a.set > 99) return null;
+  const empty = summarize({}, tasks);
+  const counts = {};
+  for (const k of KIND_ORDER) {
+    const c = a.counts && a.counts[k];
+    if (!c || !Number.isInteger(c.along) || c.along < 0 || c.along > empty[k].total) return null;
+    counts[k] = { along: c.along, total: empty[k].total };
+  }
+  const h = a.herd || {};
+  if (!Number.isInteger(h.possible) || !Number.isInteger(h.along) || h.along < 0 || h.along > h.possible || h.possible > 7) return null;
+  const shift = a.shift === null ? null : Number(a.shift);
+  if (shift !== null && !(shift >= -2 && shift <= 2)) return null;
+  return { v: 3, date: date.toISOString(), set: a.set, primed: !!a.primed, counts, herd: { along: h.along, possible: h.possible }, shift };
+}
+
+// Merge imported attempts into history, skipping any already there (same date).
+export function mergeHistory(existing, incoming) {
+  const seen = new Set(existing.map((a) => a.date));
+  const added = [];
+  for (const a of incoming) {
+    if (seen.has(a.date)) continue;
+    seen.add(a.date);
+    added.push(a);
+  }
+  const merged = [...existing, ...added].sort((x, y) => x.date.localeCompare(y.date));
+  return { merged, added: added.length, skipped: incoming.length - added.length };
+}
+
+// Parse an export file's text. Returns { attempts, rejected } or null if it isn't one.
+export function parseExport(text) {
+  let data;
+  try { data = JSON.parse(text); } catch { return null; }
+  if (!data || data.app !== 'DoYouThinkOnYourOwn' || !Array.isArray(data.attempts)) return null;
+  const attempts = [];
+  let rejected = 0;
+  for (const a of data.attempts.slice(0, 500)) {
+    const c = cleanAttempt(a);
+    if (c) attempts.push(c); else rejected += 1;
+  }
+  return { attempts, rejected };
+}
+
+export const pct = (x) => `${Math.round(x * 100)}%`;

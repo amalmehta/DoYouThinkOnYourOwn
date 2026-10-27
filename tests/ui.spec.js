@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 
 // One answer per task, in task order: p1 a1 s1 o1 g1 p2 pc s2 a2 o2 p3 g2.
 // A number picks the nth option; a string is typed; {first, final} answers a
@@ -146,7 +147,7 @@ test('quitting mid-way, even mid-reveal, resumes at the same step', async ({ pag
   for (let i = 3; i < 12; i++) await answerAt(page, i, NONE_ALONG[i]);
   await expect(page.locator('.status.along')).toHaveCount(0);
   await page.getByRole('link', { name: /Home/ }).click();
-  await expect(page.getByRole('heading', { name: 'Your past results' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your results over time' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Resume/ })).toHaveCount(0);
 });
 
@@ -218,6 +219,76 @@ test('AQ-10 screener is optional, separate, and scored', async ({ page }) => {
   await expect(page.getByText('below the cut-off of 6')).toBeVisible();
   await page.getByRole('button', { name: 'Back to results' }).click();
   await expect(page.locator('.status.along')).toHaveCount(0);
+});
+
+test('results lead with the herd rate and its range', async ({ page }) => {
+  await runAll(page, ALL_ALONG);
+  await expect(page.locator('.hero-num')).toHaveText('100%');
+  await expect(page.locator('.metric')).toContainText('7 of the 7 herd questions');
+  await expect(page.locator('.metric')).toContainText('Likely range 65%\u2013100%');
+  await expect(page.locator('.metric')).toContainText('moved 1.0 step toward the group');
+  await page.getByText('How these numbers are worked out').click();
+  await expect(page.locator('.defs').first()).toContainText('yours: 7');
+});
+
+test('second attempt gets fresh questions, and the chart appears', async ({ page }) => {
+  await runAll(page, NONE_ALONG);
+  await expect(page.getByText('This is your first attempt')).toBeVisible();
+  await page.getByRole('button', { name: 'Take it again' }).click();
+  await expect(page.getByRole('heading', { name: /kettle/ })).toBeVisible();
+  for (let i = 0; i < ALL_ALONG.length; i++) await answerAt(page, i, ALL_ALONG[i]);
+  await expect(page.locator('.trend-wrap .dot')).toHaveCount(2);
+  await page.locator('.trend-wrap .hit').first().focus();
+  await expect(page.locator('.trend-wrap .tip')).toContainText('Attempt 1');
+  await page.getByText('Show as a table').click();
+  await expect(page.locator('.trend-table tbody tr')).toHaveCount(2);
+  await expect(page.getByText('1 fresh set left')).toBeVisible();
+});
+
+test('export, then import into a clean browser by upload, drop and paste', async ({ page, browserName }, testInfo) => {
+  await runAll(page, NONE_ALONG);
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export' }).first().click()]);
+  expect(download.suggestedFilename()).toBe('Do You Think On Your Own results.json');
+  const path = testInfo.outputPath('results.json');
+  await download.saveAs(path);
+  const text = readFileSync(path, 'utf8');
+  expect(JSON.parse(text).attempts).toHaveLength(1);
+
+  // Upload button
+  await page.evaluate(() => localStorage.clear());
+  await page.goto('/');
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: 'Import' }).click()]);
+  await chooser.setFiles(path);
+  await expect(page.locator('#toast')).toContainText('Imported 1 attempt');
+  await expect(page.getByText('One attempt so far')).toBeVisible();
+
+  // Importing the same file again skips the duplicate.
+  const [chooser2] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: 'Import' }).click()]);
+  await chooser2.setFiles(path);
+  await expect(page.locator('#toast')).toContainText('Imported 0 attempts (1 already here)');
+
+  // Drop anywhere
+  await page.evaluate(() => localStorage.clear());
+  await page.goto('/');
+  await page.evaluate((t) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([t], 'r.json', { type: 'application/json' }));
+    document.querySelector('main').dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true }));
+  }, text);
+  await expect(page.locator('#toast')).toContainText('Imported 1 attempt');
+
+  // Paste the text, and reject junk
+  await page.evaluate(() => localStorage.clear());
+  await page.goto('/');
+  await page.evaluate((t) => {
+    const dt = new DataTransfer();
+    dt.setData('text/plain', t);
+    document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+  }, text);
+  await expect(page.locator('#toast')).toContainText('Imported 1 attempt');
+  const [chooser3] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: 'Import' }).click()]);
+  await chooser3.setFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from('{"nope":1}') });
+  await expect(page.locator('#toast')).toContainText('isn\u2019t a Do You Think On Your Own results file');
 });
 
 test('phone width never scrolls sideways', async ({ page }) => {

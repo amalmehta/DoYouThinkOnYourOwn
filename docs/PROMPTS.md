@@ -33,3 +33,6 @@
 
 9. **Prompt:** "this should really be testing if you are just following herd mentality"
    **Led to:** two rounds of questions. Herd means following popularity, adopting group opinions and copying under uncertainty, and it counts only when the crowd is wrong and the facts are on screen. Herd-first scope, answer alone then reveal, a popularity control, opinion shift toward the group. Rebuilt the 12 tasks (8 herd), scoring, screens, tests and docs.
+
+10. **Prompt:** "*should give quantitative metrics. also store results over time"
+    **Led to:** questions on which numbers, how retakes stay fair, and where results live. Answers: herd rate %, opinion shift size, a 95% range; three question sets; this browser plus export. Built the metrics with typeset formulas, two new question sets (B and C, facts checked), a results-over-time chart and table, and export/import by upload, drop and paste.

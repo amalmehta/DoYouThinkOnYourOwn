@@ -23,6 +23,7 @@ const browser = await chromium.launch();
 
 // p1 a1 s1 o1 g1 p2 pc s2 a2 o2 p3 g2 — a mixed run so the results show every status.
 const PLAN = [0, 1, { first: 0, final: 1 }, { first: 1, final: 1 }, '20', 1, 1, { first: 1, final: 1 }, 2, { first: 4, final: 3 }, 0, '29'];
+const PLAN2 = [1, 0, { first: 0, final: 0 }, { first: 1, final: 2 }, '12', 0, 0, { first: 1, final: 1 }, 1, { first: 4, final: 4 }, 1, '11'];
 const TYPES = ['pick', 'rate', 'switch', 'shift', 'number', 'pick', 'pick', 'switch', 'rate', 'shift', 'pick', 'number'];
 
 async function answer(page, i, a) {
@@ -53,6 +54,13 @@ async function shoot(scheme, viewport, tag) {
   await page.locator('label.opt').nth(1).click();
   await page.locator('#next').click();
   for (let i = 3; i < PLAN.length; i++) await answer(page, i, PLAN[i]);
+  // A second attempt on fresh questions, so the over-time chart has two points.
+  await page.getByRole('button', { name: 'Take it again' }).click();
+  for (let i = 0; i < PLAN2.length; i++) await answer(page, i, PLAN2[i]);
+  await page.getByText('How these numbers are worked out').click();
+  await page.waitForFunction(() => document.querySelector('.eq.ready') || !document.querySelector('.eq'), null, { timeout: 8000 }).catch(() => {});
+  await page.locator('.metric').screenshot({ path: `${OUT}/metrics-${tag}.png` });
+  await page.getByText('How these numbers are worked out').click();
   await page.locator('.moment summary').first().click();
   await page.screenshot({ path: `${OUT}/results-${tag}.png`, fullPage: true });
   await ctx.close();
