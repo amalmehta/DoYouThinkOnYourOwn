@@ -36,3 +36,20 @@
 
 10. **Prompt:** "*should give quantitative metrics. also store results over time"
     **Led to:** questions on which numbers, how retakes stay fair, and where results live. Answers: herd rate %, opinion shift size, a 95% range; three question sets; this browser plus export. Built the metrics with typeset formulas, two new question sets (B and C, facts checked), a results-over-time chart and table, and export/import by upload, drop and paste.
+
+## 2026-10-27: Define the traits, formulas and bands
+
+1. **Prompt:** "Using DoYouThinkOnYourOwn?.md and docs/RESEARCH.md if it exists, fill in the DEFINITIONS AND DEFERRED section of DoYouThinkOnYourOwn?.md. Before writing, use AskUserQuestion to ask me, with your recommendation first and 2–4 options each: how many separate traits to report (for example, independence from authority, resistance to social conformity, reflective reasoning, calibrated scepticism versus contrarianism), whether results are one score or a profile, and whether result bands use fixed cut-offs or wait for norms. Then write, for each trait: a one-line plain definition, what answers count as evidence for it, the scoring formula (typeset clearly, with every symbol defined), the result bands with their basis labelled as editorial or validated, and the disclaimer shown with results. List what is deferred. Record what you assumed under OPEN QUESTIONS / ASSUMPTIONS and add a dated CHANGELOG line. Done means every vague term in the CONTEXT line has a definition, formula and threshold, and nothing reads as validated unless it is. Before starting I was asked: "Should someone who distrusts every authority score high on 'thinks on their own', and what in your definition decides that?" My answer: whether it isnt purely contrarian (i.e. it isnt one dimensional). person is able to look at both sides, fairly and deeply, before coming up with a conclusion. I want to understand this work, not just have it done. As you go, explain the reasoning behind each change: the concept, the tradeoff, and what you chose against. Tell me where my answer above is wrong or incomplete. At the end, sum up what I should take away from it, and ask me one question that checks I understood why it was done this way."
+   **Led to:** questions on traits, score shape and bands. Answers: "3 now + 1 deferred", "Profile, no composite", "Editorial count bands, labelled". The spec now defines three reported traits and one deferred trait (calibrated scepticism vs contrarianism), each with evidence, a formula, editorial bands and a caveat, plus the results disclaimer, a map from the CONTEXT terms to traits, assumptions and deferred items. No code changed.
+
+2. **Prompt:** "open this"
+   **Led to:** the spec opened in the editor at the new traits section.
+
+3. **Prompt:** "open the site"
+   **Led to:** the local build of this branch opened in the browser pane (the GitHub Pages site serves main, which doesn't have this work yet).
+
+4. **Prompt:** "*make sure to save the result over time"
+   **Led to:** confirmed every finished attempt was already saved; a failed save (storage blocked or full) now shows a warning instead of failing silently. Two UI tests added: two attempts saved across page loads, and the warning when storage is blocked. 61 tests pass.
+
+5. **Prompt:** "Commit the working tree changes with a sensible message."
+   **Led to:** two commits: the trait definitions, and the save warning with its tests.

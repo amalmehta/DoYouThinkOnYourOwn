@@ -413,7 +413,7 @@ Definitions (revised 2026-10-27: herd-first, after the user said the survey shou
   - Opinion shift: rated a statement on a 5-point scale, was shown a group position exactly two steps away, and moved closer to it.
   - Authority: rated a false, expert-tagged claim "Likely" or "Very likely".
   - First impression: gave the tempting answer (e.g. 20 not 10). Other wrong answers count as "neither".
-- Result: herd counts first ("went along N of M" per kind), the control line beneath, then authority and first impression "for comparison". No labels or levels.
+- Result: herd counts first ("went along N of M" per kind), the control line beneath, then authority and first impression "for comparison". ~~No labels or levels.~~ Revised 2026-10-27: each trait gets editorial count bands that describe this sitting only (see Traits below); still no levels that compare you with other people.
 - Herd rate (added 2026-10-27 at the user's request for quantitative metrics): r = k / n, where k = herd questions where you went along and n = herd questions where going along was possible (excludes the control and switching questions whose first answer already matched the crowd). Shown as a percentage with the count behind it.
 - Likely range: 95% Wilson score interval on r (z = 1.96). Shown beside every herd rate.
 - Opinion shift: mean over the 2 opinion questions of (2 − |final − group|), in scale steps, from −2 (moved all the way away) to 2 (moved all the way to the group).
@@ -422,7 +422,104 @@ Definitions (revised 2026-10-27: herd-first, after the user said the survey shou
 - Autism: optional separate AQ-10 section (Allison et al. 2012). One point per item scored per the published key; 6 or more = "worth discussing with a clinician". Labelled a screener, not a diagnosis. Never mixed into the main result.
 - Done: every flow passes unit + UI tests in light/dark and at phone and desktop sizes, all facts cited and checked, live on GitHub Pages.
 
+Traits and scoring (added 2026-10-27; the user chose 3 reported traits plus 1 deferred, a profile with no composite, and editorial count bands):
+
+Basis labels used below. **Editorial**: our own choice, written for this survey and not checked against data from other people. **Validated**: comes from a published instrument and its studies, applied the way they used it. Nothing in this survey is validated. Two pieces are *adapted* from validated designs (the first-impression coding from the CRT and the switching design from Asch), but our items, item counts and bands are editorial, so the results are editorial too.
+
+The CONTEXT line's vague terms, mapped to traits:
+
+| Term in CONTEXT | What it means here | Measured by | Threshold |
+|---|---|---|---|
+| "think on your own" | You go along with a crowd or an expert only when the evidence supports it, not because of who or how many said it. | The whole profile: T1 + T2 now, T4 once built. | None on purpose. The profile is never added up into one verdict, because the traits are different things with 2–7 items each and any weights would be invented. The thresholds live in each trait's bands. |
+| "just do whatever you are told" | Taking a claim on an authority's word when the evidence doesn't back it. | T2 (authority). Instruction-following tasks were dropped on 2026-10-27, so being "told" here means being told by an expert, not obeying a command. | T2 bands. |
+| "thinking critically about the world" | Checking a quick answer before giving it (T3), and weighing a source by its evidence in both directions (T4). | T3 now, T4 deferred. Critical thinking is much broader than this; these are two narrow slices of it. | T3 bands now; T4 bands written but not in use. |
+
+**T1. Crowd independence** (resistance to social conformity). *Editorial.*
+- Definition: you keep a choice or answer that the facts on screen support when a crowd signal points the other way.
+- Evidence: the 3 counted popularity tasks, 2 switching tasks and 2 opinion tasks, judged as in "Went along" above. The popularity control (no crowd cue) is reported beside it and never counted.
+- Formula, the herd rate already built:
+
+  $$r = \frac{k}{n}$$
+
+  - $k$: herd questions where you went along (popularity, switching, opinion).
+  - $n$: herd questions where going along was possible, $3 \le n \le 7$. It leaves out the control and any switching question whose first answer was already wrong.
+  - $r$: the share of possible moments where you went along, from 0 to 1. Lower means more independent.
+
+  In words: of the chances you had to follow a wrong crowd, how many you took.
+
+- Likely range: 95% Wilson score interval, already built:
+
+  $$\tilde p = \frac{r + \dfrac{z^2}{2n}}{1 + \dfrac{z^2}{n}}, \qquad h = \frac{z}{1 + \dfrac{z^2}{n}}\sqrt{\frac{r(1-r)}{n} + \frac{z^2}{4n^2}}, \qquad \text{range} = [\,\tilde p - h,\ \tilde p + h\,] \cap [0, 1]$$
+
+  - $z = 1.96$: the multiplier for 95% coverage.
+  - $\tilde p$: the centre of the range. It is pulled slightly toward ½, which is what keeps the range from collapsing to zero width at 0 of $n$.
+  - $h$: the half-width.
+
+  Worked example: $k = 2$, $n = 7$ gives $r = 29\%$ and a range of 8–64%. Even 0 of 7 gives 0–35%, so a clean sitting doesn't rule out going along a third of the time.
+- Bands (editorial, on the counts, this sitting only):
+
+  | Condition | Band shown |
+  |---|---|
+  | $n < 3$ (cannot happen with the current sets; kept as a guard) | "Too few questions to say" |
+  | $k = 0$ | "Didn't go along this time" |
+  | $k \ge 1$ and $r < 0.5$ | "Went along sometimes" |
+  | $0.5 \le r < 1$ | "Went along more often than not" |
+  | $k = n$ | "Went along every time" |
+
+  The 0.5 line is editorial: it is where going along becomes the more common response, with no claim that it marks a trait. Reference point shown beside it, not a norm: in Asch-style line studies about 1 in 3 critical answers went along (33% in Franzen & Mader 2023: a measured figure for that task with a live group, not for ours).
+- Opinion shift size, a secondary T1 line, already built:
+
+  $$S = \frac{1}{2}\sum_{i=1}^{2}\bigl(2 - |f_i - g_i|\bigr)$$
+
+  - $f_i$: your final rating on opinion question $i$, in scale steps 0–4.
+  - $g_i$: the group position shown, always 2 steps from your first rating.
+  - $S$: average steps moved toward the group, from −2 to 2. 0 means you didn't move; 2 means you moved all the way both times.
+
+  Bands (editorial): $S \le 0$ "Didn't move toward the group"; $0 < S < 2$ "Moved part way toward the group"; $S = 2$ "Moved all the way to the group both times".
+
+**T2. Independence from authority.** *Editorial.*
+- Definition: you don't accept a claim because of an expert tag when the evidence doesn't support it.
+- Evidence: the 2 authority tasks. Rating the false, expert-tagged claim "Likely" or "Very likely" counts as going along.
+- Formula: $k_A \in \{0, 1, 2\}$, the number of false tagged claims rated likely. No rate and no range are shown: a rate from 2 items looks more precise than it is (1 of 2 has a 95% range of 9–91%).
+- Bands (editorial): 0 "Didn't take either claim on the tag"; 1 "Took 1 of 2 claims on the tag"; 2 "Took both claims on the tag".
+- Known gap: with no untagged control claims (deferred), going along can't be told apart from not knowing the fact. The wording says what happened, not why.
+
+**T3. Reflective reasoning** (checking the first answer). *Adapted from the CRT's correct / intuitive / other coding (Frederick 2005; Thomson & Oppenheimer 2016); items and bands editorial.*
+- Definition: when a quick answer arrives, you check it before giving it.
+- Evidence: the 2 first-impression tasks, each coded correct, intuitive (the lure) or other.
+- Formula: $k_G \in \{0,1,2\}$, the number of intuitive (lure) answers, with $c_G$, the number correct, shown beside it. Other wrong answers count toward neither.
+- Bands (editorial): $k_G = 0$ "Checked your first answer both times"; $k_G = 1$ "Went with the first answer once"; $k_G = 2$ "Went with the first answer both times".
+- Known gaps (docs/RESEARCH.md): the items are reworded CRT items that many people have seen (51.4% in one sample had seen at least one; Haigh 2016), and the CRT partly measures numeracy (Sinayev & Peters 2015).
+
+**T4. Calibrated scepticism, as opposed to contrarianism.** *Deferred: defined here, not reported.*
+- Definition: your agreement follows the evidence rather than the source. You go along with a crowd or an expert when they're right and not when they're wrong. A contrarian rejects both; a conformist accepts both. This is the observable side of "looks at both sides fairly before concluding".
+- Why deferred: every current task has the crowd or expert wrong, so T1 and T2 only measure $b$ below. On them, a pure contrarian looks perfectly independent.
+- Evidence it would need: at least 4 cue-right items (the crowd or expert is right and the facts on screen agree) and 4 cue-wrong items, mixed so they can't be told apart by look.
+- Formula (borrows BSR's simple difference score, not a signal-detection model):
+
+  $$D = a - b, \qquad B = \frac{a + b}{2} - \frac{1}{2}$$
+
+  - $a$: share of cue-right items where you went along with the source.
+  - $b$: share of cue-wrong items where you went along with the source (the herd rate $r$ is this for crowd items).
+  - $D$: discrimination, from −1 to 1. High means your agreement tracks whether the source is right.
+  - $B$: lean, from −½ to ½. Positive means you tend to agree whatever the evidence; negative means you tend to disagree whatever the evidence.
+
+  Example: a contrarian has $a = 0.1$, $b = 0.1$, so $D = 0$ and $B = -0.4$. A calibrated sceptic has $a = 0.9$, $b = 0.1$, so $D = 0.8$ and $B = 0$.
+- Provisional bands (editorial, not in use until the items exist): $D \ge 0.5$ "Followed the evidence more than the source"; otherwise $B \le -0.25$ "Leaned toward disagreeing whatever the evidence", $B \ge 0.25$ "Leaned toward agreeing whatever the evidence", and anything else "Mixed".
+- Not measurable in a click survey: how *deeply* someone weighs both sides. Answer time is not depth, so it isn't used as a proxy.
+
+**Disclaimer shown with results** (once, above the profile; the existing "mirror, not a measurement" line is folded into it):
+
+> This is a mirror, not a measurement. Each line comes from 2 to 7 questions written for this survey, and none of them is a validated test. The bands are our words for your counts in this sitting, not a comparison with other people. One careless tap can change a band. It shows what you did here, not why, and not who you are.
+
+Each trait card also carries its own one-line caveat: T1 its likely range, T2 "can't tell deferring from not knowing the fact", T3 "you may have seen puzzles like these before".
+
 Deferred (proposals, not built):
+- Showing the trait names, bands and new disclaimer in the UI. Today's results screen shows counts, the herd rate, its range and the shift size, without bands.
+- T4 calibrated scepticism: cue-right items for crowd and authority (at least 4 + 4), then $D$ and $B$ on the results screen.
+- Norms: any "compared with others" wording or validated bands. Needs answers from many people, so it waits for the backend-and-consent item below.
+- Reliability: test–retest across question sets A, B and C, once enough attempts exist to check whether the sets are equally hard.
+- Depth of reasoning (free-text reasons or similar); not measurable with the current task types.
 - Untagged control claims to estimate an authority effect within a person.
 - Replacing the two first-impression puzzles, which are reworded versions of widely known CRT items (see docs/RESEARCH.md).
 - Collecting answers across people (needs a backend and consent).
@@ -436,6 +533,13 @@ OPEN QUESTIONS / ASSUMPTIONS:
 - Settings: theme, motion, text size, clear history. ⌘, opens them where the browser allows, plus a gear button.
 - Feedback tab opens a prefilled GitHub issue (no email, no server).
 - Fixed task order, so friends' results are comparable.
+- Assumed (2026-10-27) the user's answer, that thinking on your own "isn't purely contrarian: you look at both sides fairly and deeply before concluding", is a definition of a *process*. A survey only sees answers, so it is turned into an observable test (T4: does agreement follow the evidence or the source?). "Deeply" has no measure here.
+- Assumed the three traits keep the existing task-to-kind mapping: popularity, switching and opinion → T1; authority → T2; first impression → T3. No task changes.
+- Assumed "thinks on your own" names the whole profile and is never given a threshold of its own, since the user chose no composite.
+- Assumed the bands' cut points (0, below half, half or more, all) are editorial and use "this time" wording, so no band reads as a fixed trait.
+- Assumed T2 and T3 show counts only, with no rate or range, because 2 items give a range too wide to help (1 of 2 → 9–91%).
+- Assumed the Asch figure is shown as a reference point beside T1, never as a cut-off.
+- Open: whether the T4 cue-right items should be built next; it is the only way to tell a contrarian from an independent thinker.
 
 CHANGELOG:
 
@@ -444,6 +548,7 @@ CHANGELOG:
 - 2026-10-27 — added quantitative metrics (herd rate with 95% Wilson range, opinion shift size), results over time (chart, table, export/import) and three question sets so retakes aren't primed
 - 2026-10-27 — refocused on herd mentality: 8 of 12 tasks test popularity, switching and opinion shift, with an answer-alone-first step and a no-crowd control; instructions tasks dropped
 - 2026-10-27 — first version built and published (PR #1); facts corrected after source check (head heat ≤10%, 2026 population figures, CIA Factbook sources replaced)
+- 2026-10-27 — defined the traits: crowd independence, independence from authority and reflective reasoning reported as a profile with no composite; calibrated scepticism vs contrarianism defined but deferred; formulas, editorial count bands, results disclaimer, and a map from each CONTEXT term to its trait
 - 2026-10-27 — added docs/RESEARCH.md: cited review of CRT, CRT-2, AOT, NCS-6/18, Bullshit Receptivity and Asch conformity, plus free online tests; recommends writing our own tasks with adapted controls
 - 2026-09-15 — added meta-instruction: built-out applications include a small feedback tab
 - 2026-09-15 — added meta-instruction: no "Claude" attribution in commits, PRs, or branches
