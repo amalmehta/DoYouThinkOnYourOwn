@@ -1,7 +1,7 @@
 // Screens and state. All content comes from tasks.js / aq10.js; all judging
 // from scoring.js. Nothing here talks to a network.
-import { TASKS, KINDS, KIND_ORDER } from './tasks.js';
-import { judge, summarize, encodeShare, decodeShare, countPhrase } from './scoring.js';
+import { TASKS, KINDS, KIND_ORDER, HERD_KINDS, AGREE5, groupFor } from './tasks.js';
+import { judge, stage, summarize, controlResult, encodeShare, decodeShare, countPhrase } from './scoring.js';
 import { AQ10, AQ10_OPTIONS, AQ10_CUTOFF, scoreAQ10 } from './aq10.js';
 import { load, save } from './store.js';
 
@@ -45,14 +45,14 @@ function go(screen, patch = {}) {
 
 // ---------- intro ----------
 function renderIntro() {
-  const progress = load('progress', null);
-  const canResume = progress && progress.i > 0 && progress.i < TASKS.length;
-  const history = load('history', []);
+  const progress = loadProgress();
+  const canResume = progress && progress.i < TASKS.length && Object.keys(progress.responses || {}).length > 0;
+  const history = load('history', []).filter((h) => h.v === 2);
   return `
   <div class="card hero">
     ${heroArt}
     <h1 tabindex="-1" data-focus>Do you think on your own?</h1>
-    <p class="lede">Twelve short questions. At the end you’ll see each moment you went along with an expert, a crowd, a form or your first impression, and what was really going on.</p>
+    <p class="lede">Twelve short questions, most of them about what other people chose. At the end you’ll see each moment you followed the herd, and what was really going on.</p>
     <ul class="facts">
       <li>${ICONS.clock}<span>About 5 minutes. One question at a time.</span></li>
       <li>${ICONS.twist}<span>Some questions hide a twist. Every one is explained at the end.</span></li>
@@ -76,12 +76,23 @@ function renderIntro() {
 }
 
 // ---------- tasks ----------
-const optionRow = (task, i, label, checked, extra = '') => `
-  <label class="opt"><input type="radio" name="opt" value="${i}" ${checked ? 'checked' : ''}><span class="dot"></span><span>${esc(label)}${extra}</span>${task.options.length <= 4 ? `<span class="num" aria-hidden="true">${i + 1}</span>` : ''}</label>`;
+const radio = (i, checked, inner, n = true) => `
+  <label class="opt"><input type="radio" name="opt" value="${i}" ${checked ? 'checked' : ''}><span class="dot"></span><span class="opt-body">${inner}</span>${n ? `<span class="num" aria-hidden="true">${i + 1}</span>` : ''}</label>`;
+
+function pickOption(o) {
+  return `<span class="pick-name">${esc(o.name)}</span><span class="pick-lines">${o.lines.map(esc).join(' · ')}</span>${o.badge ? `<span class="badge">${esc(o.badge)}</span>` : ''}`;
+}
+
+function scale(selected, marks = {}) {
+  return `<fieldset class="options scale5"><legend class="sr-only">Agreement</legend>
+    ${AGREE5.map((label, i) => radio(i, selected === i, `${esc(label)}${marks[i] ? `<span class="mark">${esc(marks[i])}</span>` : ''}`)).join('')}
+  </fieldset>`;
+}
 
 function renderTask() {
   const t = TASKS[state.i];
   const r = state.responses[t.id] || {};
+  const st = stage(t, r);
   const n = state.i + 1;
   const pct = (state.i / TASKS.length) * 100;
   let body = '';
@@ -90,32 +101,50 @@ function renderTask() {
     body = `
       <p class="tag">${esc(t.tag)}</p>
       <h2 class="claim" tabindex="-1" data-focus>${esc(cap(t.claim))}</h2>
-      <fieldset class="options"><legend class="ask" style="margin-bottom:10px">${esc(t.ask)}</legend>
-        ${t.options.map((o, i) => optionRow(t, i, o, r.choice === i)).join('')}
+      <fieldset class="options"><legend class="ask">${esc(t.ask)}</legend>
+        ${t.options.map((o, i) => radio(i, r.choice === i, esc(o))).join('')}
       </fieldset>
       ${r.checked ? `<div class="source-panel"><b>What the research says.</b> ${esc(t.check)}</div>` : ''}`;
-  } else if (t.type === 'choice') {
-    const crowdName = t.options[t.crowd.option];
+  } else if (t.type === 'pick') {
     body = `
       <h2 class="claim" tabindex="-1" data-focus>${esc(t.prompt)}</h2>
-      <div class="crowd"><span>${t.crowd.pct}% of people who answered chose ${esc(crowdName)}.</span><div class="track"><div class="fill" style="width:${t.crowd.pct}%"></div></div></div>
-      <fieldset class="options two"><legend class="sr-only">${esc(t.prompt)}</legend>
-        ${t.options.map((o, i) => optionRow(t, i, o, r.choice === i)).join('')}
+      <fieldset class="options two picks"><legend class="sr-only">${esc(t.prompt)}</legend>
+        ${t.options.map((o, i) => radio(i, r.choice === i, pickOption(o))).join('')}
       </fieldset>`;
-  } else if (t.type === 'agree') {
-    body = `
-      <h2 class="claim" tabindex="-1" data-focus>${esc(t.statement)}</h2>
-      <fieldset class="options two"><legend class="ask" style="margin-bottom:10px">${esc(t.ask)}</legend>
-        ${t.options.map((o, i) => optionRow(t, i, o, r.choice === i)).join('')}
-      </fieldset>`;
-  } else if (t.type === 'default') {
-    if (r.choice === undefined) state.responses[t.id] = { choice: t.preselected };
-    const sel = state.responses[t.id].choice;
-    body = `
-      <h2 class="claim" tabindex="-1" data-focus>${esc(t.prompt)}</h2>
-      <fieldset class="options"><legend class="sr-only">${esc(t.prompt)}</legend>
-        ${t.options.map((o, i) => optionRow(t, i, o, sel === i, i === t.preselected ? '<span class="chip">Recommended</span>' : '')).join('')}
-      </fieldset>`;
+  } else if (t.type === 'switch') {
+    if (st === 'first') {
+      body = `
+        <h2 class="claim" tabindex="-1" data-focus>${esc(t.prompt)}</h2>
+        <fieldset class="options two"><legend class="ask">${esc(t.ask)}</legend>
+          ${t.options.map((o, i) => radio(i, r.draft === i, esc(o))).join('')}
+        </fieldset>`;
+    } else {
+      const other = 1 - r.first;
+      const crowdName = t.options[t.crowd.option];
+      body = `
+        <p class="tag">${esc(t.prompt)} ${esc(t.ask)}</p>
+        <p class="yours">You chose <b>${esc(t.options[r.first])}</b>.</p>
+        <div class="crowd" tabindex="-1" data-focus><span>${t.crowd.pct}% of people who answered chose ${esc(crowdName)}.</span><div class="track"><div class="fill" style="width:${t.crowd.pct}%"></div></div></div>
+        <fieldset class="options two"><legend class="ask">Your final answer?</legend>
+          ${radio(r.first, r.final === r.first, `Keep ${esc(t.options[r.first])}`)}
+          ${radio(other, r.final === other, `Change to ${esc(t.options[other])}`)}
+        </fieldset>`;
+    }
+  } else if (t.type === 'shift') {
+    if (st === 'first') {
+      body = `
+        <h2 class="claim" tabindex="-1" data-focus>${esc(t.statement)}</h2>
+        <p class="ask">${esc(t.ask)}</p>
+        ${scale(r.draft)}`;
+    } else {
+      const g = groupFor(r.first);
+      const marks = { [r.first]: 'your answer', [g]: 'most people' };
+      body = `
+        <p class="tag">${esc(t.statement)}</p>
+        <div class="crowd" tabindex="-1" data-focus><span>Most people who answered said <b>${esc(AGREE5[g])}</b>. You said ${esc(AGREE5[r.first])}.</span></div>
+        <p class="ask">Where do you land now?</p>
+        ${scale(r.final, marks)}`;
+    }
   } else if (t.type === 'number') {
     body = `
       <h2 class="claim" id="num-prompt">${esc(t.prompt)}</h2>
@@ -123,7 +152,7 @@ function renderTask() {
       <div class="numfield"><input id="num" name="num" type="text" inputmode="decimal" autocomplete="off" maxlength="12" value="${esc(r.value ?? '')}" aria-describedby="num-prompt num-unit"><span id="num-unit" class="quiet">${esc(t.unit)}</span></div>`;
   }
 
-  const last = n === TASKS.length;
+  const last = n === TASKS.length && st !== 'first';
   return `
   <div class="card">
     <div class="progress" aria-label="Question ${n} of ${TASKS.length}"><div class="track"><div class="fill" style="width:${pct}%"></div></div><span>${n} of ${TASKS.length}</span></div>
@@ -138,19 +167,38 @@ function renderTask() {
 
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
+function canAdvance(t, r) {
+  if (stage(t, r) === 'first') return r != null && r.draft != null;
+  return judge(t, r) !== null;
+}
+
 function syncNext() {
   const t = TASKS[state.i];
   const btn = document.getElementById('next');
-  if (btn) btn.disabled = judge(t, state.responses[t.id]) === null;
+  if (btn) btn.disabled = !canAdvance(t, state.responses[t.id]);
+}
+
+// Progress from an older question set is ignored rather than resumed into the wrong questions.
+function loadProgress() {
+  const p = load('progress', null);
+  return p && p.v === 2 ? p : null;
 }
 
 function saveProgress() {
-  save('progress', { i: state.i, responses: state.responses });
+  save('progress', { v: 2, i: state.i, responses: state.responses });
 }
 
 function next() {
   const t = TASKS[state.i];
-  if (judge(t, state.responses[t.id]) === null) return;
+  const r = state.responses[t.id];
+  if (!canAdvance(t, r)) return;
+  if (stage(t, r) === 'first') {
+    // Lock the first answer, then show what the group chose.
+    state.responses[t.id] = { first: r.draft };
+    saveProgress();
+    render();
+    return;
+  }
   if (state.i < TASKS.length - 1) {
     state.i += 1;
     saveProgress();
@@ -159,7 +207,7 @@ function next() {
   }
   const counts = summarize(state.responses);
   const history = load('history', []);
-  history.push({ date: new Date().toISOString(), counts });
+  history.push({ v: 2, date: new Date().toISOString(), counts });
   save('history', history.slice(-50));
   save('progress', undefined);
   go('results');
@@ -168,16 +216,19 @@ function next() {
 // ---------- results ----------
 function answerText(t, r) {
   if (!r) return '—';
-  if (t.type === 'number') return `${r.value.trim()} ${t.unit}`;
-  const label = t.options[r.choice];
-  if (t.type === 'rate') return label + (r.checked ? ' · checked the source' : ' · didn’t check the source');
-  if (t.type === 'default') return label + (r.choice === t.preselected ? ' (pre-ticked)' : '');
-  return label;
+  switch (t.type) {
+    case 'number': return `${r.value.trim()} ${t.unit}`;
+    case 'rate': return t.options[r.choice] + (r.checked ? ' · checked the source' : ' · didn’t check the source');
+    case 'pick': return t.options[r.choice].name;
+    case 'switch': return r.final === r.first ? `${t.options[r.first]}, kept` : `${t.options[r.first]}, then changed to ${t.options[r.final]}`;
+    case 'shift': return r.final === r.first ? `${AGREE5[r.first]}, kept` : `${AGREE5[r.first]} → ${AGREE5[r.final]} (group shown: ${AGREE5[groupFor(r.first)]})`;
+    default: return '';
+  }
 }
 
 function questionText(t) {
   if (t.type === 'rate') return `${t.tag} ${t.claim}`;
-  if (t.type === 'agree') return `${t.statement} ${t.ask}`;
+  if (t.type === 'shift') return t.statement;
   return t.prompt + (t.ask ? ' ' + t.ask : '');
 }
 
@@ -185,18 +236,22 @@ const STATUS = { along: 'Went along', not: 'Didn’t', neither: 'Neither' };
 
 function renderMoment(t) {
   const r = state.responses[t.id];
-  const v = judge(t, r) || 'neither';
+  const v = t.control ? 'control' : judge(t, r) || 'neither';
   const parts = [
     `<p><b>The twist.</b> ${esc(t.twist)}</p>`,
     `<p><b>What’s true.</b> ${esc(t.truth)}</p>`,
   ];
   if (t.type === 'number' && v === 'neither') parts.push(`<p class="quiet">Your answer wasn’t the tempting one or the right one (${t.answer} ${esc(t.unit)}).</p>`);
-  if (t.invented || t.crowd) parts.push(`<p class="invented">${esc(t.invented || '')}</p>`);
+  if (t.type === 'switch' && v === 'neither') parts.push('<p class="quiet">Your first answer already matched the crowd, so this one can’t tell herding from a slip. It isn’t counted either way.</p>');
+  if (t.invented) parts.push(`<p class="invented">${esc(t.invented)}</p>`);
   if (t.note) parts.push(`<p class="quiet">${esc(t.note)}</p>`);
   if (t.sources.length) parts.push(`<p class="sources">Source: ${t.sources.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join('; ')}</p>`);
+  const chip = t.control
+    ? `<span class="status neither">No crowd shown</span>`
+    : `<span class="status ${v}">${STATUS[v]}</span>`;
   return `
   <li><details class="moment">
-    <summary><span class="q">${esc(questionText(t))}</span><span class="you">You: ${esc(answerText(t, r))}</span><span class="status ${v}">${STATUS[v]}</span></summary>
+    <summary><span class="q">${esc(questionText(t))}</span><span class="you">You: ${esc(answerText(t, r))}</span>${chip}</summary>
     <div class="reveal">${parts.join('')}</div>
   </details></li>`;
 }
@@ -209,6 +264,13 @@ function kindCard(k, c) {
     <span class="pips" aria-hidden="true">${Array.from({ length: c.total }, (_, i) => `<span class="pip ${i < c.along ? 'on' : ''}"></span>`).join('')}</span>
     <span class="quiet">${esc(KINDS[k].short)}</span>
   </div>`;
+}
+
+function controlLine(ok) {
+  if (ok === null) return '';
+  return ok
+    ? '<p class="quiet control-line">With no crowd shown, you picked the option that fit. So if you followed popularity elsewhere, it wasn’t from rushing.</p>'
+    : '<p class="quiet control-line">With no crowd shown, you also picked the option that didn’t fit. Some popularity picks may be rushing rather than herding.</p>';
 }
 
 function renderResults() {
@@ -224,23 +286,31 @@ function renderResults() {
       <ul class="moments">${TASKS.filter((t) => t.kind === k).map(renderMoment).join('')}</ul>
     </section>`;
   }).join('');
+  const others = KIND_ORDER.filter((k) => !HERD_KINDS.includes(k));
   return `
   <div class="stack-lg">
     <div class="stack">
-      <h1 tabindex="-1" data-focus>Where you went along</h1>
-      <p class="lede">Each count comes from 2–4 questions, so one careless tap changes it. Read it as a mirror, not a measurement. Open any moment to see what was going on.</p>
+      <h1 tabindex="-1" data-focus>Where you followed the herd</h1>
+      <p class="lede">Each count comes from 2–3 questions, so one careless tap changes it. Read it as a mirror, not a measurement. Open any moment to see what was going on.</p>
     </div>
-    <div class="kinds">${KIND_ORDER.map((k) => kindCard(k, counts[k])).join('')}</div>
+    <div class="stack">
+      <div class="kinds three">${HERD_KINDS.map((k) => kindCard(k, counts[k])).join('')}</div>
+      ${controlLine(controlResult(state.responses))}
+    </div>
+    <div class="stack">
+      <h2 class="sub">For comparison</h2>
+      <div class="kinds">${others.map((k) => kindCard(k, counts[k])).join('')}</div>
+    </div>
     ${sections}
     <div class="callout">
-      <h3>The habit underneath all four</h3>
-      <p>Each time, something other than evidence was doing the persuading: a title, a number of people, a pre-ticked box, or the speed of an answer. Next time you feel sure, name what made you sure, then ask whether it’s evidence.</p>
+      <h3>The habit underneath</h3>
+      <p>Each time you went along, something other than the facts was doing the persuading: a review count, a headcount, the group’s number, a title, or the speed of an answer. Next time you feel sure, name what made you sure, then ask whether it’s evidence.</p>
     </div>
     <div class="share">
       <button class="btn" data-action="share">${ICONS.link} Copy a link to your result</button>
       <button class="btn ghost" data-action="again">Take it again</button>
     </div>
-    <p class="quiet">The link holds only the four counts, not your answers. A retake is primed: you now know the twists.</p>
+    <p class="quiet">The link holds only your five counts, not your answers. A retake is primed: you now know the twists.</p>
     <div class="callout">
       <h3>Optional: a 10-question autism screener</h3>
       <p>Separate from everything above, and it doesn’t change your counts. The AQ-10 is a short questionnaire used in the UK to decide who might benefit from a full assessment. It’s a screener, not a diagnosis.</p>
@@ -265,9 +335,10 @@ function renderShared() {
   <div class="stack-lg">
     <div class="stack">
       <h1 tabindex="-1" data-focus>A friend’s result</h1>
-      <p class="lede">Someone sent you how often they went along. To see what each question was really testing, take it yourself first. Knowing the twists spoils them.</p>
+      <p class="lede">Someone sent you how often they followed the herd. To see what each question was really testing, take it yourself first. Knowing the twists spoils them.</p>
     </div>
-    <div class="kinds">${KIND_ORDER.map((k) => kindCard(k, c[k])).join('')}</div>
+    <div class="kinds three">${HERD_KINDS.map((k) => kindCard(k, c[k])).join('')}</div>
+    <div class="kinds">${KIND_ORDER.filter((k) => !HERD_KINDS.includes(k)).map((k) => kindCard(k, c[k])).join('')}</div>
     <div class="row"><button class="btn" data-action="start">Take it yourself</button></div>
   </div>`;
 }
@@ -401,7 +472,7 @@ document.addEventListener('click', async (e) => {
     render();
   } else if (a === 'start') start(true);
   else if (a === 'resume') {
-    const p = load('progress', null);
+    const p = loadProgress();
     if (!p) return start(true);
     state = { ...fresh(), i: p.i, responses: p.responses || {} };
     go('task');
@@ -440,7 +511,10 @@ let aqTimer;
 main.addEventListener('change', (e) => {
   if (e.target.name === 'opt') {
     const t = TASKS[state.i];
-    state.responses[t.id] = { ...(state.responses[t.id] || {}), choice: Number(e.target.value) };
+    const r = state.responses[t.id] || {};
+    const v = Number(e.target.value);
+    const field = t.type === 'switch' || t.type === 'shift' ? (stage(t, r) === 'first' ? 'draft' : 'final') : 'choice';
+    state.responses[t.id] = { ...r, [field]: v };
     saveProgress();
     syncNext();
   } else if (e.target.name === 'aq') {
@@ -471,7 +545,7 @@ document.addEventListener('keydown', (e) => {
   }
   if (settingsDialog.open || e.metaKey || e.ctrlKey || e.altKey) return;
   const inField = e.target.matches('input[type="text"]');
-  if (/^[1-4]$/.test(e.key) && !inField && (state.screen === 'task' || state.screen === 'aq')) {
+  if (/^[1-5]$/.test(e.key) && !inField && (state.screen === 'task' || state.screen === 'aq')) {
     const radio = main.querySelectorAll('input[type="radio"]')[Number(e.key) - 1];
     if (radio) {
       radio.checked = true;

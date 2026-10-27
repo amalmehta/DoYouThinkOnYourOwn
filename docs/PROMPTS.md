@@ -27,3 +27,9 @@
 
 7. **Prompt:** "Yes, add docs/RESEARCH.md to the PR and restore the research session's prompt-log entry."
    **Led to:** docs/RESEARCH.md added to PR #1; the research session's entry above restored word for word from its transcript after this session had overwritten it.
+
+8. **Prompt:** "open this bad boy up"
+   **Led to:** the survey opened in the browser pane.
+
+9. **Prompt:** "this should really be testing if you are just following herd mentality"
+   **Led to:** two rounds of questions. Herd means following popularity, adopting group opinions and copying under uncertainty, and it counts only when the crowd is wrong and the facts are on screen. Herd-first scope, answer alone then reveal, a popularity control, opinion shift toward the group. Rebuilt the 12 tasks (8 herd), scoring, screens, tests and docs.

@@ -2,25 +2,26 @@
 
 # Do You Think On Your Own?
 
-Twelve short questions, about five minutes. At the end you see each moment you went along with an expert, a crowd, a form or your first impression, and what was really going on, with sources.
+Twelve short questions, about five minutes, most of them testing whether you follow the herd. At the end you see each moment you went along with the crowd, and what was really going on, with sources.
 
 **[Take it →](https://amalmehta.github.io/DoYouThinkOnYourOwn/)** · Nothing leaves your device.
 
-| A question | The results |
+| A popularity question | The results |
 |---|---|
-| ![A claim tagged with an invented expert, with the source check open](docs/screenshots/task-light.png) | ![Results on a phone: went along 3 of 4 with authority, each moment explained](docs/screenshots/results-phone.png) |
-| ![A question with a made-up majority, dark mode](docs/screenshots/crowd-dark.png) | ![The intro, dark mode, on a phone](docs/screenshots/intro-phone-dark.png) |
+| ![Two power banks: the bestseller is worse on every fact shown](docs/screenshots/popularity-light.png) | ![Results on a phone: herd counts first, then authority and first impression for comparison](docs/screenshots/results-phone.png) |
+| ![After answering, the made-up majority appears and you can keep or change your answer (dark mode)](docs/screenshots/switch-dark.png) | ![The intro on a phone, dark mode](docs/screenshots/intro-phone-dark.png) |
 
-**What it measures.** It records what you did, not what you say about yourself, across four kinds of going along:
+**What it measures.** It records what you do, not what you say about yourself. Eight questions test the herd in three ways, and four more give a comparison:
 
 | Kind | Questions | Counts as going along |
 |---|---|---|
-| Authority | 4 | Rating a false claim backed only by an expert tag as likely |
-| Crowd | 3 | Picking the answer an invented majority chose, which is wrong |
-| Instructions | 2 | Selecting Agree because you were told to, or keeping a wrong pre-ticked answer |
-| First impression | 3 | Giving the tempting quick answer to a puzzle |
+| Popularity | 3, plus 1 control | Picking the popular option when the facts on screen show it's worse |
+| Switching | 2 | Abandoning a right answer after seeing that most people chose the wrong one |
+| Opinion shift | 2 | Moving your view toward the group's after seeing where the group sits |
+| Authority | 2 | Rating a false claim backed only by an expert tag as likely |
+| First impression | 2 | Giving the tempting quick answer to a puzzle |
 
-There's no overall score: adding unlike things would imply a scale that doesn't exist. With 2–4 questions per kind, treat the counts as a mirror, not a measurement. An optional, separate [AQ-10](https://www.autismresearchcentre.com/tests/autism-spectrum-quotient-10-items-aq-10-adult/) autism screener follows the results. It's a screener, not a diagnosis.
+The control shows the same kind of choice with no crowd cue, so a careless pick can be told apart from following the crowd. There's no overall score: adding unlike things would imply a scale that doesn't exist. With 2–3 questions per kind, treat the counts as a mirror, not a measurement. An optional, separate [AQ-10](https://www.autismresearchcentre.com/tests/autism-spectrum-quotient-10-items-aq-10-adult/) autism screener follows the results. It's a screener, not a diagnosis.
 
 **Links**
 - [How to run, test and use it](docs/INSTRUCTIONS.md)

@@ -21,7 +21,20 @@ const browser = await chromium.launch();
   await page.close();
 }
 
-const PLAN = ['20', 2, 1, 0, 1, '4', 0, 2, null, 1, '15', 2];
+// p1 a1 s1 o1 g1 p2 pc s2 a2 o2 p3 g2 — a mixed run so the results show every status.
+const PLAN = [0, 1, { first: 0, final: 1 }, { first: 1, final: 1 }, '20', 1, 1, { first: 1, final: 1 }, 2, { first: 4, final: 3 }, 0, '29'];
+const TYPES = ['pick', 'rate', 'switch', 'shift', 'number', 'pick', 'pick', 'switch', 'rate', 'shift', 'pick', 'number'];
+
+async function answer(page, i, a) {
+  if (typeof a === 'string') await page.locator('#num').fill(a);
+  else if (typeof a === 'number') await page.locator('label.opt').nth(a).click();
+  else {
+    await page.locator('label.opt').nth(a.first).click();
+    await page.locator('#next').click();
+    await page.locator('label.opt').nth(TYPES[i] === 'switch' ? (a.final === a.first ? 0 : 1) : a.final).click();
+  }
+  await page.locator('#next').click();
+}
 
 async function shoot(scheme, viewport, tag) {
   const ctx = await browser.newContext({ colorScheme: scheme, viewport, deviceScaleFactor: 2, reducedMotion: 'reduce' });
@@ -30,18 +43,16 @@ async function shoot(scheme, viewport, tag) {
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: `${OUT}/intro-${tag}.png` });
   await page.getByRole('button', { name: /^Start/ }).click();
-  await page.locator('#num').fill('20');
+  await page.locator('label.opt').nth(1).click();
+  await page.screenshot({ path: `${OUT}/popularity-${tag}.png` });
   await page.locator('#next').click();
-  await page.locator('label.opt').nth(2).click();
-  await page.getByRole('button', { name: 'Check the source' }).click();
-  await page.screenshot({ path: `${OUT}/task-${tag}.png` });
+  await answer(page, 1, PLAN[1]);
+  await page.locator('label.opt').nth(0).click();
   await page.locator('#next').click();
-  await page.screenshot({ path: `${OUT}/crowd-${tag}.png` });
-  for (const a of PLAN.slice(2)) {
-    if (typeof a === 'string') await page.locator('#num').fill(a);
-    else if (a !== null) await page.locator('label.opt').nth(a).click();
-    await page.locator('#next').click();
-  }
+  await page.screenshot({ path: `${OUT}/switch-${tag}.png` });
+  await page.locator('label.opt').nth(1).click();
+  await page.locator('#next').click();
+  for (let i = 3; i < PLAN.length; i++) await answer(page, i, PLAN[i]);
   await page.locator('.moment summary').first().click();
   await page.screenshot({ path: `${OUT}/results-${tag}.png`, fullPage: true });
   await ctx.close();

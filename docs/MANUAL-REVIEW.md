@@ -5,6 +5,7 @@ These are the things the automated tests can't judge. Tick them on a real phone 
 ## Feel and wording
 - [ ] Take it cold, as a friend would. Does any twist feel like a trick played on you rather than a lesson? Note which one.
 - [ ] Does the results screen feel like a mirror, not a grade? Is any line preachy?
+- [ ] Do the switching questions feel fair once you notice the pattern? Does the opinion reveal ("set on purpose two steps from yours") land as honest, not sneaky?
 - [ ] Is the authority wording ("you rated this false claim likely") fair, not accusing?
 - [ ] AQ-10 result text: calm, not alarming, and clearly not a diagnosis?
 
@@ -15,7 +16,7 @@ These are the things the automated tests can't judge. Tick them on a real phone 
 - [ ] Turning on Reduced motion in Settings or the OS removes the fades.
 
 ## Looks
-- [ ] Light and dark on a real screen: the blues for Authority, Crowd and Instructions are told apart at a glance, and the terracotta reads as a different family.
+- [ ] Light and dark on a real screen: the three herd blues (Popularity, Switching, Opinion shift) are told apart at a glance, and the sage (Authority) and terracotta (First impression) read as different families.
 - [ ] Large text (Settings, and iOS Dynamic Type through Safari zoom) doesn't clip.
 - [ ] Icon is recognisable as a browser tab favicon and on an iPhone home screen (Share → Add to Home Screen).
 

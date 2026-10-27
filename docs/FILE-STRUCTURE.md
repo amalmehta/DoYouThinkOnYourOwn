@@ -4,7 +4,7 @@
 index.html               The page shell: header, settings dialog, feedback tab
 src/
   app.js                 Screens, state, events (the only file that touches the DOM)
-  tasks.js               The 12 questions, the four kinds, twists, truths, sources
+  tasks.js               The 12 questions, the five kinds, twists, truths, sources
   scoring.js             Pure judging, per-kind counts, share-link encoding
   aq10.js                AQ-10 items and published scoring key
   store.js               localStorage, guarded so blocked storage still works

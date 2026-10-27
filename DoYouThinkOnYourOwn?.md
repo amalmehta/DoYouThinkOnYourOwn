@@ -403,21 +403,24 @@ Decisions from the 2026-10-27 interview:
 - Deception: say up front that some questions hide a twist; every twist is explained on the results screen (debriefing, APA Ethics Code 8.07/8.08).
 - Repo: public, GitHub Pages, pushed with a PR to main.
 
-Definitions:
-- Task: one screen with one answer. 12 tasks, about 5 minutes.
-- Kinds (4): Authority (4 tasks), Crowd (3), Gut (3), Instructions (2).
+Definitions (revised 2026-10-27: herd-first, after the user said the survey should really test herd mentality):
+- Task: one screen with one answer (switching and opinion tasks have a second step on the same screen). 12 tasks, about 5 minutes.
+- Herd mentality, as the user defined it: following popularity, adopting group opinions, and copying under uncertainty. Copying counts as herding only when the crowd is wrong and the facts needed are on screen.
+- Kinds: Popularity (3 counted + 1 uncounted control), Switching (2), Opinion shift (2), Authority (2), First impression (2). Instructions tasks dropped.
 - "Went along" (per task, deterministic, no AI):
-  - Authority: rated a false, expert-tagged claim "Likely" or "Very likely". Checking the source is recorded and shown, but doesn't change the count.
-  - Crowd: picked the answer a stated (invented) majority chose, which is the wrong one.
-  - Gut: gave the tempting first-impression answer (e.g. 0.20 not 0.10). Other wrong answers count as "neither".
-  - Instructions: selected Agree when told to, or kept a wrong pre-selected answer.
-- Result per kind: "went along N of M". No labels, levels or total. Small samples (2–4 per kind) are labelled as illustrative, not diagnostic.
-- Authority wording: say what happened ("you rated this false claim likely; its only support was the expert tag"), not why.
+  - Popularity: picked the option with the crowd cue (bestseller, trending, most popular) when the facts shown make the other option better. The control shows the same kind of choice with no cue; it is reported, never counted.
+  - Switching: answered right alone, then changed to the crowd's wrong answer after an invented majority was shown. If the first answer was already wrong, it isn't counted (neither).
+  - Opinion shift: rated a statement on a 5-point scale, was shown a group position exactly two steps away, and moved closer to it.
+  - Authority: rated a false, expert-tagged claim "Likely" or "Very likely".
+  - First impression: gave the tempting answer (e.g. 20 not 10). Other wrong answers count as "neither".
+- Result: herd counts first ("went along N of M" per kind), the control line beneath, then authority and first impression "for comparison". No labels, levels or total.
+- Authority wording: say what happened, not why.
 - Autism: optional separate AQ-10 section (Allison et al. 2012). One point per item scored per the published key; 6 or more = "worth discussing with a clinician". Labelled a screener, not a diagnosis. Never mixed into the main result.
 - Done: every flow passes unit + UI tests in light/dark and at phone and desktop sizes, all facts cited and checked, live on GitHub Pages.
 
 Deferred (proposals, not built):
 - Untagged control claims to estimate an authority effect within a person.
+- Replacing the two first-impression puzzles, which are reworded versions of widely known CRT items (see docs/RESEARCH.md).
 - Collecting answers across people (needs a backend and consent).
 - Randomised task order and alternate task sets for retakes.
 - Mac app wrapper.
@@ -434,6 +437,7 @@ CHANGELOG:
 
 - 2026-10-27 — created
 - 2026-10-27 — interview answers, definitions, deferred list and deliverables filled in
+- 2026-10-27 — refocused on herd mentality: 8 of 12 tasks test popularity, switching and opinion shift, with an answer-alone-first step and a no-crowd control; instructions tasks dropped
 - 2026-10-27 — first version built and published (PR #1); facts corrected after source check (head heat ≤10%, 2026 population figures, CIA Factbook sources replaced)
 - 2026-10-27 — added docs/RESEARCH.md: cited review of CRT, CRT-2, AOT, NCS-6/18, Bullshit Receptivity and Asch conformity, plus free online tests; recommends writing our own tasks with adapted controls
 - 2026-09-15 — added meta-instruction: built-out applications include a small feedback tab

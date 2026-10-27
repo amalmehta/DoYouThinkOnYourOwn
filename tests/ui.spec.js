@@ -1,20 +1,29 @@
 import { test, expect } from '@playwright/test';
 
-// One answer per task, in task order: g1 a1 c1 i1 a2 g2 c2 a3 i2 c3 g3 a4.
-// Numbers are typed; indexes pick the nth option; null keeps a pre-ticked answer.
-const ALL_ALONG = ['20', 2, 1, 0, 3, '50', 1, 2, null, 0, '15', 2];
-const NONE_ALONG = ['10', 0, 0, 1, 1, '4', 0, 0, 1, 1, '29', 1];
+// One answer per task, in task order: p1 a1 s1 o1 g1 p2 pc s2 a2 o2 p3 g2.
+// A number picks the nth option; a string is typed; {first, final} answers a
+// two-step task (switch: option indexes; shift: 0..4 on the agree scale).
+const ALL_ALONG = [0, 2, { first: 0, final: 1 }, { first: 0, final: 1 }, '20', 0, 1, { first: 1, final: 0 }, 3, { first: 4, final: 3 }, 0, '15'];
+const NONE_ALONG = [1, 0, { first: 0, final: 0 }, { first: 0, final: 0 }, '10', 1, 1, { first: 1, final: 1 }, 1, { first: 4, final: 4 }, 1, '29'];
+const TYPES = ['pick', 'rate', 'switch', 'shift', 'number', 'pick', 'pick', 'switch', 'rate', 'shift', 'pick', 'number'];
 
-async function answer(page, a) {
+async function answerAt(page, idx, a) {
   if (typeof a === 'string') await page.locator('#num').fill(a);
-  else if (a !== null) await page.locator('label.opt').nth(a).click();
+  else if (typeof a === 'number') await page.locator('label.opt').nth(a).click();
+  else {
+    await page.locator('label.opt').nth(a.first).click();
+    await page.locator('#next').click();
+    // Switch reveal lists Keep first, then Change; the shift reveal is the 5-point scale again.
+    const nth = TYPES[idx] === 'switch' ? (a.final === a.first ? 0 : 1) : a.final;
+    await page.locator('label.opt').nth(nth).click();
+  }
   await page.locator('#next').click();
 }
 
 async function runAll(page, plan) {
   await page.getByRole('button', { name: /^Start/ }).click();
-  for (const a of plan) await answer(page, a);
-  await expect(page.getByRole('heading', { name: 'Where you went along' })).toBeVisible();
+  for (let i = 0; i < plan.length; i++) await answerAt(page, i, plan[i]);
+  await expect(page.getByRole('heading', { name: 'Where you followed the herd' })).toBeVisible();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -28,20 +37,22 @@ test('intro explains the twist and the privacy promise', async ({ page }) => {
   await expect(page.getByText('Nothing leaves this device')).toBeVisible();
 });
 
-test('going along every time is counted per kind', async ({ page }) => {
+test('going along every time is counted per kind, herd first', async ({ page }) => {
   await runAll(page, ALL_ALONG);
   const cards = page.locator('.kinds .kcard');
-  await expect(cards.nth(0)).toContainText('Went along every time (4 of 4)');
-  await expect(cards.nth(1)).toContainText('Went along every time (3 of 3)');
-  await expect(cards.nth(2)).toContainText('Went along every time (2 of 2)');
-  await expect(cards.nth(3)).toContainText('Went along every time (3 of 3)');
-  await expect(page.locator('.status.along')).toHaveCount(12);
+  await expect(cards.nth(0)).toContainText('Popularity');
+  await expect(cards.nth(0)).toContainText('Went along every time (3 of 3)');
+  await expect(cards.nth(1)).toContainText('Went along every time (2 of 2)');
+  await expect(cards.nth(2)).toContainText('Opinion shift');
+  await expect(page.getByRole('heading', { name: 'For comparison' })).toBeVisible();
+  await expect(page.locator('.status.along')).toHaveCount(11);
+  await expect(page.getByText('With no crowd shown, you picked the option that fit')).toBeVisible();
 });
 
 test('never going along, with sources opened in a moment', async ({ page }) => {
   await runAll(page, NONE_ALONG);
   await expect(page.locator('.status.along')).toHaveCount(0);
-  await expect(page.locator('.kinds')).toContainText('Didn’t go along (0 of 4)');
+  await expect(page.locator('.kinds').first()).toContainText('Didn\u2019t go along (0 of 3)');
   const first = page.locator('.moment').first();
   await first.locator('summary').click();
   await expect(first.locator('.reveal')).toContainText('The twist.');
@@ -49,66 +60,90 @@ test('never going along, with sources opened in a moment', async ({ page }) => {
   await expect(first.locator('.invented')).toContainText('invented');
 });
 
-test('a gut answer that is neither tempting nor right shows as Neither', async ({ page }) => {
-  const plan = [...NONE_ALONG];
-  plan[10] = '30';
-  await runAll(page, plan);
-  await expect(page.locator('.status.neither')).toHaveCount(1);
+test('switching: the crowd appears only after you answer, and a wrong first answer is not counted', async ({ page }) => {
+  await page.getByRole('button', { name: /^Start/ }).click();
+  await answerAt(page, 0, 1);
+  await answerAt(page, 1, 0);
+  await expect(page.getByText('3 of 12')).toBeVisible();
+  await expect(page.getByText(/of people who answered chose/)).toHaveCount(0);
+  await page.locator('label.opt').nth(1).click(); // the crowd's (wrong) answer first
+  await page.locator('#next').click();
+  await expect(page.getByText('71% of people who answered chose $70 with 10% off.')).toBeVisible();
+  await expect(page.locator('#next')).toBeDisabled();
+  await page.locator('label.opt').nth(0).click();
+  await page.locator('#next').click();
+  const plan = NONE_ALONG.slice(3);
+  for (let i = 0; i < plan.length; i++) await answerAt(page, i + 3, plan[i]);
+  await expect(page.locator('.status.neither')).toHaveCount(2); // this switch + the control chip
+});
+
+test('opinion: the group is shown two steps from your answer', async ({ page }) => {
+  await page.getByRole('button', { name: /^Start/ }).click();
+  for (let i = 0; i < 3; i++) await answerAt(page, i, NONE_ALONG[i]);
+  await page.keyboard.press('2'); // Disagree
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('Most people who answered said')).toContainText('Agree');
+  await expect(page.locator('.mark')).toHaveCount(2);
 });
 
 test('Next stays disabled until there is a real answer', async ({ page }) => {
   await page.getByRole('button', { name: /^Start/ }).click();
   const next = page.locator('#next');
   await expect(next).toBeDisabled();
-  await page.locator('#num').fill('ten');
-  await expect(next).toBeDisabled();
-  await page.locator('#num').fill('10');
+  await page.locator('#next').click({ force: true, clickCount: 5 });
+  await expect(page.getByText('1 of 12')).toBeVisible();
+  await page.locator('label.opt').nth(1).click();
   await expect(next).toBeEnabled();
   await next.click();
+  await answerAt(page, 1, 0);
+  await answerAt(page, 2, NONE_ALONG[2]);
+  await answerAt(page, 3, NONE_ALONG[3]);
+  await page.locator('#num').fill('ten');
   await expect(page.locator('#next')).toBeDisabled();
-  // Rapid clicks on a disabled Next never skip a question.
-  await page.locator('#next').click({ force: true, clickCount: 5 });
-  await expect(page.getByText('2 of 12')).toBeVisible();
 });
 
 test('checking the source shows the evidence and is remembered in the results', async ({ page }) => {
   await page.getByRole('button', { name: /^Start/ }).click();
-  await answer(page, '10');
+  await answerAt(page, 0, 1);
+  await page.locator('label.opt').nth(0).click();
   await page.getByRole('button', { name: 'Check the source' }).click();
   await expect(page.locator('.source-panel')).toContainText('BMJ');
-  await expect(page.getByRole('button', { name: 'Check the source' })).toHaveCount(0);
-  for (const a of NONE_ALONG.slice(1)) await answer(page, a);
-  await expect(page.locator('.moment').first()).toContainText('checked the source');
-});
-
-test('the pre-ticked answer is ticked and labelled Recommended', async ({ page }) => {
-  await page.getByRole('button', { name: /^Start/ }).click();
-  for (const a of NONE_ALONG.slice(0, 8)) await answer(page, a);
-  await expect(page.getByText('9 of 12')).toBeVisible();
-  await expect(page.locator('input[name="opt"]').first()).toBeChecked();
-  await expect(page.locator('.chip')).toHaveText('Recommended');
-  await expect(page.locator('#next')).toBeEnabled();
+  await page.locator('#next').click();
+  for (let i = 2; i < 12; i++) await answerAt(page, i, NONE_ALONG[i]);
+  await expect(page.locator('[data-kind="authority"] .moment').first()).toContainText('checked the source');
 });
 
 test('keyboard only: Enter, number keys and typing', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(page.getByText('1 of 12')).toBeVisible();
-  for (const a of ALL_ALONG) {
+  for (let i = 0; i < ALL_ALONG.length; i++) {
+    const a = ALL_ALONG[i];
     if (typeof a === 'string') await page.keyboard.type(a);
-    else if (a !== null) await page.keyboard.press(String(a + 1));
+    else if (typeof a === 'number') await page.keyboard.press(String(a + 1));
+    else {
+      await page.keyboard.press(String(a.first + 1));
+      await page.keyboard.press('Enter');
+      const nth = TYPES[i] === 'switch' ? (a.final === a.first ? 0 : 1) : a.final;
+      await page.keyboard.press(String(nth + 1));
+    }
     await page.keyboard.press('Enter');
   }
-  await expect(page.getByRole('heading', { name: 'Where you went along' })).toBeVisible();
-  await expect(page.locator('.status.along')).toHaveCount(12);
+  await expect(page.getByRole('heading', { name: 'Where you followed the herd' })).toBeVisible();
+  await expect(page.locator('.status.along')).toHaveCount(11);
 });
 
-test('quitting mid-way and coming back resumes at the same question', async ({ page }) => {
+test('quitting mid-way, even mid-reveal, resumes at the same step', async ({ page }) => {
   await page.getByRole('button', { name: /^Start/ }).click();
-  for (const a of NONE_ALONG.slice(0, 5)) await answer(page, a);
+  await answerAt(page, 0, 1);
+  await answerAt(page, 1, 0);
+  await page.locator('label.opt').nth(0).click();
+  await page.locator('#next').click(); // now on the reveal
   await page.reload();
-  await page.getByRole('button', { name: /Resume at 6 of 12/ }).click();
-  await expect(page.getByText('6 of 12')).toBeVisible();
-  for (const a of NONE_ALONG.slice(5)) await answer(page, a);
+  await page.getByRole('button', { name: /Resume at 3 of 12/ }).click();
+  await expect(page.getByText(/71% of people/)).toBeVisible();
+  await page.locator('label.opt').nth(0).click();
+  await page.locator('#next').click();
+  for (let i = 3; i < 12; i++) await answerAt(page, i, NONE_ALONG[i]);
   await expect(page.locator('.status.along')).toHaveCount(0);
   await page.getByRole('link', { name: /Home/ }).click();
   await expect(page.getByRole('heading', { name: 'Your past results' })).toBeVisible();
@@ -116,9 +151,9 @@ test('quitting mid-way and coming back resumes at the same question', async ({ p
 });
 
 test('a shared link shows a friend’s counts; a broken one says so', async ({ page }) => {
-  await page.goto('/#r=v1.2-0-2-1');
+  await page.goto('/#r=v2.2-0-1-1-0');
   await expect(page.getByRole('heading', { name: 'A friend’s result' })).toBeVisible();
-  await expect(page.locator('.kcard').first()).toContainText('Went along 2 of 4 times');
+  await expect(page.locator('.kcard').first()).toContainText('Went along 2 of 3 times');
   await page.goto('/#r=v1.9-9-9');
   await expect(page.getByRole('heading', { name: 'This link doesn’t hold a result' })).toBeVisible();
   await page.getByRole('button', { name: 'Start' }).click();
@@ -133,7 +168,7 @@ test('share builds a link with only the counts', async ({ page, browserName, con
   await page.getByRole('button', { name: /Copy a link/ }).click();
   await expect(page.locator('#toast')).toContainText('Link copied');
   const text = await page.evaluate(() => navigator.clipboard.readText());
-  expect(text).toMatch(/#r=v1\.4-3-2-3$/);
+  expect(text).toMatch(/#r=v2\.3-2-2-2-2$/);
 });
 
 test('settings: theme and text size apply at once and survive a reload', async ({ page }) => {
@@ -166,7 +201,7 @@ test('works when storage is blocked', async ({ page }) => {
   });
   await page.goto('/');
   await runAll(page, ALL_ALONG);
-  await expect(page.locator('.status.along')).toHaveCount(12);
+  await expect(page.locator('.status.along')).toHaveCount(11);
 });
 
 test('AQ-10 screener is optional, separate, and scored', async ({ page }) => {
@@ -187,10 +222,12 @@ test('AQ-10 screener is optional, separate, and scored', async ({ page }) => {
 
 test('phone width never scrolls sideways', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
-  for (const a of [null, ...NONE_ALONG]) {
-    if (a === null) await page.getByRole('button', { name: /^Start/ }).click();
-    else await answer(page, a);
+  await page.getByRole('button', { name: /^Start/ }).click();
+  for (let i = 0; i < NONE_ALONG.length; i++) {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);
+    await answerAt(page, i, NONE_ALONG[i]);
   }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
 });
