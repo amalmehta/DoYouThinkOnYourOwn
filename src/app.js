@@ -254,9 +254,10 @@ function next() {
   }
   const history = getHistory();
   history.push(attemptRecord(state.responses, state.set % SETS.length, state.set >= SETS.length, cur()));
-  save('history', history.slice(-200));
+  const saved = save('history', history.slice(-200));
   save('progress', undefined);
   go('results');
+  if (!saved) toast('Couldn’t save this attempt. This browser is blocking site storage, so it won’t appear in your results over time.', 8000);
 }
 
 // ---------- results ----------
@@ -475,11 +476,11 @@ settingsDialog.addEventListener('change', (e) => {
 
 // ---------- toast & clipboard ----------
 let toastTimer;
-function toast(msg) {
+function toast(msg, ms = 2200) {
   toastEl.textContent = msg;
   toastEl.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms);
 }
 
 async function copy(text) {

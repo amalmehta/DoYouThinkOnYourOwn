@@ -151,6 +151,29 @@ test('quitting mid-way, even mid-reveal, resumes at the same step', async ({ pag
   await expect(page.getByRole('button', { name: /Resume/ })).toHaveCount(0);
 });
 
+test('every finished attempt is saved to results over time and survives a reload', async ({ page }) => {
+  await runAll(page, ALL_ALONG);
+  await page.goto('/'); // a fresh page load: only what's in storage carries over
+  await runAll(page, NONE_ALONG);
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('dytooy.history')));
+  expect(saved).toHaveLength(2);
+  expect(saved.map((a) => a.set)).toEqual([0, 1]);
+  expect(saved[0].herd.along).toBeGreaterThan(saved[1].herd.along);
+});
+
+test('a blocked save says so instead of failing silently', async ({ page }) => {
+  await page.addInitScript(() => {
+    const real = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) {
+      if (k === 'dytooy.history') throw new DOMException('blocked', 'QuotaExceededError');
+      return real.call(this, k, v);
+    };
+  });
+  await page.goto('/');
+  await runAll(page, NONE_ALONG);
+  await expect(page.getByText(/Couldn’t save this attempt/)).toBeVisible();
+});
+
 test('a shared link shows a friend’s counts; a broken one says so', async ({ page }) => {
   await page.goto('/#r=v2.2-0-1-1-0');
   await expect(page.getByRole('heading', { name: 'A friend’s result' })).toBeVisible();
