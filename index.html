@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Do You Think On Your Own?</title>
+  <meta name="description" content="Twelve short questions that show the moments you went along with an expert, a crowd, a form or your first impression, and what was really going on.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#FAF7F2" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#171513" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/icon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap">
+  <link rel="stylesheet" href="src/styles.css">
+  <script>
+    // Apply the saved theme and text size before first paint, so nothing flickers.
+    try {
+      var t = JSON.parse(localStorage.getItem('dytooy.settings') || '{}');
+      if (t.theme === 'light' || t.theme === 'dark') document.documentElement.dataset.theme = t.theme;
+      if (t.text === 'large') document.documentElement.dataset.text = 'large';
+      if (t.motion === 'reduce') document.documentElement.dataset.motion = 'reduce';
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="bar">
+    <a class="brand" href="./" data-action="home" aria-label="Do You Think On Your Own? Home">
+      <img src="assets/icon.svg" alt="" width="28" height="28">
+      <span>Do You Think On Your Own?</span>
+    </a>
+    <button class="icon-btn" type="button" data-action="settings" aria-label="Settings" title="Settings (⌘,)">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.5A7.4 7.4 0 0 0 7 6.5l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 2.6-1.5l2.4 1 2-3.4-2-1.6Z"/></svg>
+    </button>
+  </header>
+
+  <main id="main" tabindex="-1" aria-live="polite"></main>
+
+  <a class="feedback-tab" id="feedback" target="_blank" rel="noopener" href="https://github.com/amalmehta/DoYouThinkOnYourOwn/issues/new?title=Feedback&amp;body=What%20happened%2C%20and%20what%20did%20you%20expect%3F">Feedback</a>
+
+  <dialog id="settings" aria-labelledby="settings-title">
+    <form method="dialog" class="settings">
+      <h2 id="settings-title">Settings</h2>
+      <fieldset>
+        <legend>Appearance</legend>
+        <div class="seg" role="radiogroup" aria-label="Appearance">
+          <label><input type="radio" name="theme" value="system"> System</label>
+          <label><input type="radio" name="theme" value="light"> Light</label>
+          <label><input type="radio" name="theme" value="dark"> Dark</label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Text size</legend>
+        <div class="seg" role="radiogroup" aria-label="Text size">
+          <label><input type="radio" name="text" value="default"> Default</label>
+          <label><input type="radio" name="text" value="large"> Large</label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Motion</legend>
+        <div class="seg" role="radiogroup" aria-label="Motion">
+          <label><input type="radio" name="motion" value="system"> System</label>
+          <label><input type="radio" name="motion" value="reduce"> Reduced</label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Your data</legend>
+        <p class="quiet" id="data-note">Past results are kept in this browser only.</p>
+        <button type="button" class="btn ghost" data-action="clear-history">Clear past results</button>
+      </fieldset>
+      <div class="row end"><button class="btn" value="close">Done</button></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <noscript><p class="wrap">This survey needs JavaScript to run. Nothing you answer is sent anywhere.</p></noscript>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
