@@ -1,0 +1,16 @@
+{
+  "name": "doyouthinkonyourown",
+  "private": true,
+  "type": "module",
+  "description": "Do You Think On Your Own? A five-minute survey that shows where you went along.",
+  "scripts": {
+    "start": "python3 -m http.server 8765 --bind 127.0.0.1",
+    "test": "node --test tests/*.test.js",
+    "test:ui": "playwright test",
+    "test:all": "npm test && playwright test",
+    "shots": "node tests/screenshots.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
+  }
+}

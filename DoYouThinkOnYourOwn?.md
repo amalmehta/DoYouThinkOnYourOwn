@@ -42,6 +42,14 @@ META-INSTRUCTIONS:
  widget's notes or my own answer. Keep the message around it to a sentence or
  two.>
 
+<Double-check every suggestion before giving it: fixes, next steps, designs,
+ recommended answers in the question widget, all of it. Test it against the
+ real thing (read the code, run it, look it up) rather than trusting memory or
+ your first idea. Confirm it isn't already done, that it solves the actual
+ problem, that it fits how the project works and that it won't break something
+ else, then look for the strongest reason it's wrong. Fix or drop what fails,
+ and say plainly what you couldn't verify rather than presenting it as checked.>
+
 <Explain so I learn the skill, not just the answer. Write explanations that
  anyone with a basic grounding in software, machine learning, neuroscience or
  psychology could follow: name the underlying idea in plain words, give an
@@ -55,31 +63,21 @@ META-INSTRUCTIONS:
 
 <Prefer doing over describing: run the code, write the files, test it.>
 
-<Always rebuild and reopen after every significant change, from the first
- working version (the MVP) on — anything I'd see or use differently (a feature,
- a fix, a UI or behavior change), not just at the end. Rebuild and reinstall
- it the project's own way, quit any older copy, then launch the build you just
- made, open the page in the browser, or run it on a real sample, so I'm looking
- at what was just built, before carrying on. Never leave me running a stale
- copy. Say in a line or two what changed and what to try.>
+<Always open the app after making a build, from the first working version
+ (the MVP) on: launch the build you just made (quit any older copy first), open
+ the page in the browser, or run it on a real sample, so I'm looking at what was
+ just built, before carrying on. Say in a line or two what to try.>
+
+<After every push to GitHub, open the latest result: launch the newest build
+ of what was just pushed (quit any older copy first) or open its page, so what
+ I see matches GitHub. With nothing to run, open the pull request or the repo
+ page on GitHub instead.>
 
 <Fully test on sample data before asking me to test on real data. Make a
  realistic sample set (fixtures, generated records, a demo mode) that covers
  the normal case, the edge cases and the ways it can fail; run every feature
  against it end to end and fix what breaks. Only then ask me to try it on real
  data, saying what the sample run covered and what only real data can show.>
-
-<Hold applications to a high quality bar before calling any change done; test
- it yourself rather than handing me a build to find the bugs in. Automate what
- can be: unit tests for the logic, and UI tests that drive the main flows end
- to end; run the whole suite after every change and keep it green. Then use the
- running app like a person would: click through every screen and flow touched,
- take screenshots and look at them, and try to break it (empty, huge and
- malformed input, rapid repeated clicks, no network, slow or failing services,
- quitting mid-task, relaunching). Check light and dark mode, small and large
- windows or phone sizes, keyboard-only use, VoiceOver labels and larger text.
- Fix what you find and re-run the checks. Report what was tested, what passed,
- and what wasn't covered.>
 
 <Publish production apps to GitHub. Once an app is ready for real users,
  nothing about it should live only on this Mac: commit everything, push every
@@ -129,10 +127,8 @@ META-INSTRUCTIONS:
  accents used on purpose, and dark mode checked on every component. Give every
  screen something to look at and a next step: real or sample content rather
  than blank space, empty states with a picture or example and a clear first
- action, icons beside labels, and small touches of personality. Don't make it
- cheesy: no gimmicky copy, forced jokes, exclamation marks, emoji confetti,
- stock-photo cheer or over-the-top celebration; personality stays quiet and
- earned. Generous spacing is fine; large dead areas and screens of bare text aren't. When the visuals are
+ action, icons beside labels, and small touches of personality. Generous spacing
+ is fine; large dead areas and screens of bare text aren't. When the visuals are
  open-ended, offer two or three mockups to pick from. Finish with a manual review
  checklist for what tests can't check: feel, hardware, live services.>
 
@@ -146,6 +142,28 @@ META-INSTRUCTIONS:
  lists lazy and scrolling fluid, and debounce work that follows typing.
  Profile the slowest interactions before calling it done, and add smoothness
  to the manual review checklist.>
+
+<Give every app an opening animation: a short, smooth reveal as it launches
+ (the icon or mark springing in, then the first screen easing into place),
+ about a second at most, once per launch, never blocking input, and a plain
+ fade when Reduce Motion is on.>
+
+<Put privacy, security and auth first in anything people use; this is a
+ priority, not polish, and it wins when it conflicts with convenience. Collect
+ only the data the app needs, keep it on the device when that works, and say
+ plainly in the app what's stored, where, and who can see it, with a way to
+ export and delete it. Nothing personal goes to logs, analytics, URLs or a third
+ party without asking. Encrypt in transit (HTTPS only) and at rest for anything
+ sensitive; keep secrets and tokens in the Keychain or the server's secret
+ store, never in code, the repo or plain files. Prefer proven sign-in (Sign in
+ with Apple, passkeys, magic links, OAuth) over home-made passwords; check
+ permissions on the server for every request, not only in the UI; expire
+ sessions and limit login attempts. Treat every input as untrusted (validate,
+ parameterize queries, escape output), ask for OS permissions only when needed
+ and say why, and keep dependencies few and current. Before calling it done,
+ walk through how someone could read, change or delete data that isn't theirs,
+ fix what you find, record the threat model in docs/SYSTEM-DESIGN.md, and add
+ privacy and security to the manual review checklist.>
 
 <Make equations easy to read. Typeset them properly (KaTeX or MathJax on the
  web, a native math renderer in apps, LaTeX in papers), never as raw LaTeX or
@@ -190,6 +208,9 @@ META-INSTRUCTIONS:
  through it as each of them: the first open, the main task, and when something
  goes wrong. Build for what they'd need and notice.>
 
+<Each piece of software needs to connect deeply with the way a human being
+ naturally interacts with the world.>
+
 <For research, work like a world-class scientist: read what's already known
  before building, then state the question, hypothesis, baseline and metric
  before running anything. Change one thing at a time with controls and
@@ -216,6 +237,14 @@ META-INSTRUCTIONS:
  a rework, and pick the design now that keeps those later steps easy. Put the
  outline in docs/SYSTEM-DESIGN.md before writing code, but build only what's
  in scope today.>
+
+<Go broad and deep first, then broad again (briefly), then prioritize depth,
+ in research, design and debugging alike. Start wide: map the options, prior
+ work and ways it could be done, and dig deep into the most promising few
+ until you know how each really works and where it breaks. Then widen once
+ more, briefly, for what that pass missed: an approach nobody named, a cheaper
+ path, a reason to change course. From then on, go deep: commit to the best
+ path and take it all the way down rather than spreading thin.>
 
 <Use sub-agents when they help. Hand them independent pieces that can run in
  parallel (separate projects, files or research questions), wide searches or
@@ -274,8 +303,7 @@ META-INSTRUCTIONS:
    things, often, and sharing them.
  - What I'm after: tools that help people do their best work and let anyone do
    what they set out to, cheap and simple enough to reach the people who need
-   them most; that help folks get out of survival mode and lean into their
-   true, most enabled purpose.
+   them most.
  - Interests: how brains and machines learn; building fictional worlds and
    telling stories; mountains, skiing, ice climbing and travel; cooking; sport
    (soccer, running, tennis); hard sci-fi; small playful touches, like a hidden
@@ -314,6 +342,22 @@ META-INSTRUCTIONS:
  ~/.claude/CLAUDE.md and apply on their own — nothing to repeat here.>
 
 <Keep the changelog at the bottom current.>
+
+<Before building, list the lessons from this spec that apply and how you will act on each. At the end, note which you followed.>
+
+<When the project's kind is unclear, such as whether it is a tool or written content, ask before building.>
+
+<Before building, settle the deliverable's form, target platforms and minimum versions, packaging and signing, and hosting. When the brief conflicts with standing defaults, ask which wins.>
+
+<Before any paid API call, settle who pays, a spending cap, test versus live mode and where keys live, and keep a mock mode so the build runs without spending.>
+
+<When the look, concept or UI direction is open, show two or three concrete mockups or concepts to pick from before building. Never redesign existing UI without asking.>
+
+<Ask early for real sample inputs and working credentials, and check against the live API, model or tool as soon as one path works. When none exist, say so rather than inventing them silently.>
+
+<Before building, write down done criteria with concrete thresholds or formulas for every vague term, plus a list of what is explicitly deferred, and confirm both with me.>
+
+<Before building anything that judges, scores or generates content, decide with me whether an AI model or deterministic rules produce it, weighing cost, explainability and reproducibility, and which model is the default.>
 
 LEARNED ACROSS PROJECTS:
 
@@ -403,23 +447,141 @@ Decisions from the 2026-10-27 interview:
 - Deception: say up front that some questions hide a twist; every twist is explained on the results screen (debriefing, APA Ethics Code 8.07/8.08).
 - Repo: public, GitHub Pages, pushed with a PR to main.
 
-Definitions:
-- Task: one screen with one answer. 12 tasks, about 5 minutes.
-- Kinds (4): Authority (4 tasks), Crowd (3), Gut (3), Instructions (2).
+Definitions (revised 2026-10-27: herd-first, after the user said the survey should really test herd mentality):
+- Task: one screen with one answer (switching and opinion tasks have a second step on the same screen). 12 tasks, about 5 minutes.
+- Herd mentality, as the user defined it: following popularity, adopting group opinions, and copying under uncertainty. Copying counts as herding only when the crowd is wrong and the facts needed are on screen.
+- Kinds: Popularity (3 counted + 1 uncounted control), Switching (2), Opinion shift (2), Authority (2), First impression (2). Instructions tasks dropped.
 - "Went along" (per task, deterministic, no AI):
-  - Authority: rated a false, expert-tagged claim "Likely" or "Very likely". Checking the source is recorded and shown, but doesn't change the count.
-  - Crowd: picked the answer a stated (invented) majority chose, which is the wrong one.
-  - Gut: gave the tempting first-impression answer (e.g. 0.20 not 0.10). Other wrong answers count as "neither".
-  - Instructions: selected Agree when told to, or kept a wrong pre-selected answer.
-- Result per kind: "went along N of M". No labels, levels or total. Small samples (2–4 per kind) are labelled as illustrative, not diagnostic.
-- Authority wording: say what happened ("you rated this false claim likely; its only support was the expert tag"), not why.
+  - Popularity: picked the option with the crowd cue (bestseller, trending, most popular) when the facts shown make the other option better. The control shows the same kind of choice with no cue; it is reported, never counted.
+  - Switching: answered right alone, then changed to the crowd's wrong answer after an invented majority was shown. If the first answer was already wrong, it isn't counted (neither).
+  - Opinion shift: rated a statement on a 5-point scale, was shown a group position exactly two steps away, and moved closer to it.
+  - Authority: rated a false, expert-tagged claim "Likely" or "Very likely".
+  - First impression: gave the tempting answer (e.g. 20 not 10). Other wrong answers count as "neither".
+- Result: herd counts first ("went along N of M" per kind), the control line beneath, then authority and first impression "for comparison". ~~No labels or levels.~~ Revised 2026-10-27: each trait gets editorial count bands that describe this sitting only (see Traits below); still no levels that compare you with other people.
+- Herd rate (added 2026-10-27 at the user's request for quantitative metrics): r = k / n, where k = herd questions where you went along and n = herd questions where going along was possible (excludes the control and switching questions whose first answer already matched the crowd). Shown as a percentage with the count behind it.
+- Likely range: 95% Wilson score interval on r (z = 1.96). Shown beside every herd rate.
+- Opinion shift: mean over the 2 opinion questions of (2 − |final − group|), in scale steps, from −2 (moved all the way away) to 2 (moved all the way to the group).
+- Results over time: every completed attempt is stored in this browser (date, set, primed, counts, herd k and n, shift), up to 200. Attempts 1–3 use question sets A, B, C; attempt 4 on repeats them and is marked primed. Shown as a chart (herd rate with range per attempt, hollow if primed) and a table. Export/Import as a JSON file (upload button, drop anywhere, paste); duplicates by date are skipped and malformed attempts rejected.
+- Authority wording: say what happened, not why.
 - Autism: optional separate AQ-10 section (Allison et al. 2012). One point per item scored per the published key; 6 or more = "worth discussing with a clinician". Labelled a screener, not a diagnosis. Never mixed into the main result.
 - Done: every flow passes unit + UI tests in light/dark and at phone and desktop sizes, all facts cited and checked, live on GitHub Pages.
 
+Levels and going back (added 2026-10-27, at the user's request; they chose harder facts, a locked first answer, one set each for medium and hard, and a chart per level):
+- Level: Easy, Medium or Hard, picked on the start screen and remembered. Every level has the same 12 slots, kinds, judging rules and formulas. Only how hard the facts are to work out changes; the answer is always on screen.
+  - Easy: the facts are plain to see (sets A, B, C).
+  - Medium: the facts take a step of working out, such as a unit price, a total over time or a stacked discount (set M).
+  - Hard: the facts are in the small print, need several steps or turn on probability, and the experts are in their own field (set H).
+- Why harder facts and not more pressure: in Baron et al.'s experiments, when getting the answer right mattered, people conformed more on hard judgements and less on easy ones (Baron, Vandello & Brunsman 1996, J Pers Soc Psychol 71(5):915–927, https://doi.org/10.1037/0022-3514.71.5.915). Known cost: harder facts also test numeracy. Switching's answer-first step separates the two; popularity can't.
+- Fresh versus primed, per level: an attempt is primed when its level's sets are used up. With $a_\ell$ = earlier attempts at level $\ell$ and $S_\ell$ = that level's set count (easy 3, medium 1, hard 1), the set used is $a_\ell \bmod S_\ell$, and the attempt is primed when $a_\ell \ge S_\ell$.
+- Comparing levels: herd rates from different levels are never compared or charted together. Each level has its own chart; one table lists every attempt with its level. Records saved before levels existed read as easy.
+- Back: available on every question after the first, and goes to the previous question. On switching and opinion questions, once the crowd or group has been shown, the first answer is locked and only the final answer can change. Going back never resets a question's step.
+- Done (levels and Back): all question sets at every level pass the same shape and arithmetic tests; each authority claim and citation checked against its source by a separate agent; UI tests cover Back with a locked first answer, the remembered level, the saved level and a chart per level, on desktop, WebKit and phone.
+
+Traits and scoring (added 2026-10-27; the user chose 3 reported traits plus 1 deferred, a profile with no composite, and editorial count bands):
+
+Basis labels used below. **Editorial**: our own choice, written for this survey and not checked against data from other people. **Validated**: comes from a published instrument and its studies, applied the way they used it. Nothing in this survey is validated. Two pieces are *adapted* from validated designs (the first-impression coding from the CRT and the switching design from Asch), but our items, item counts and bands are editorial, so the results are editorial too.
+
+The CONTEXT line's vague terms, mapped to traits:
+
+| Term in CONTEXT | What it means here | Measured by | Threshold |
+|---|---|---|---|
+| "think on your own" | You go along with a crowd or an expert only when the evidence supports it, not because of who or how many said it. | The whole profile: T1 + T2 now, T4 once built. | None on purpose. The profile is never added up into one verdict, because the traits are different things with 2–7 items each and any weights would be invented. The thresholds live in each trait's bands. |
+| "just do whatever you are told" | Taking a claim on an authority's word when the evidence doesn't back it. | T2 (authority). Instruction-following tasks were dropped on 2026-10-27, so being "told" here means being told by an expert, not obeying a command. | T2 bands. |
+| "thinking critically about the world" | Checking a quick answer before giving it (T3), and weighing a source by its evidence in both directions (T4). | T3 now, T4 deferred. Critical thinking is much broader than this; these are two narrow slices of it. | T3 bands now; T4 bands written but not in use. |
+
+**T1. Crowd independence** (resistance to social conformity). *Editorial.*
+- Definition: you keep a choice or answer that the facts on screen support when a crowd signal points the other way.
+- Evidence: the 3 counted popularity tasks, 2 switching tasks and 2 opinion tasks, judged as in "Went along" above. The popularity control (no crowd cue) is reported beside it and never counted.
+- Formula, the herd rate already built:
+
+  $$r = \frac{k}{n}$$
+
+  - $k$: herd questions where you went along (popularity, switching, opinion).
+  - $n$: herd questions where going along was possible, $3 \le n \le 7$. It leaves out the control and any switching question whose first answer was already wrong.
+  - $r$: the share of possible moments where you went along, from 0 to 1. Lower means more independent.
+
+  In words: of the chances you had to follow a wrong crowd, how many you took.
+
+- Likely range: 95% Wilson score interval, already built:
+
+  $$\tilde p = \frac{r + \dfrac{z^2}{2n}}{1 + \dfrac{z^2}{n}}, \qquad h = \frac{z}{1 + \dfrac{z^2}{n}}\sqrt{\frac{r(1-r)}{n} + \frac{z^2}{4n^2}}, \qquad \text{range} = [\,\tilde p - h,\ \tilde p + h\,] \cap [0, 1]$$
+
+  - $z = 1.96$: the multiplier for 95% coverage.
+  - $\tilde p$: the centre of the range. It is pulled slightly toward ½, which is what keeps the range from collapsing to zero width at 0 of $n$.
+  - $h$: the half-width.
+
+  Worked example: $k = 2$, $n = 7$ gives $r = 29\%$ and a range of 8–64%. Even 0 of 7 gives 0–35%, so a clean sitting doesn't rule out going along a third of the time.
+- Bands (editorial, on the counts, this sitting only):
+
+  | Condition | Band shown |
+  |---|---|
+  | $n < 3$ (cannot happen with the current sets; kept as a guard) | "Too few questions to say" |
+  | $k = 0$ | "Didn't go along this time" |
+  | $k \ge 1$ and $r < 0.5$ | "Went along sometimes" |
+  | $0.5 \le r < 1$ | "Went along more often than not" |
+  | $k = n$ | "Went along every time" |
+
+  The 0.5 line is editorial: it is where going along becomes the more common response, with no claim that it marks a trait. Reference point shown beside it, not a norm: in Asch-style line studies about 1 in 3 critical answers went along (33% in Franzen & Mader 2023: a measured figure for that task with a live group, not for ours).
+- Opinion shift size, a secondary T1 line, already built:
+
+  $$S = \frac{1}{2}\sum_{i=1}^{2}\bigl(2 - |f_i - g_i|\bigr)$$
+
+  - $f_i$: your final rating on opinion question $i$, in scale steps 0–4.
+  - $g_i$: the group position shown, always 2 steps from your first rating.
+  - $S$: average steps moved toward the group, from −2 to 2. 0 means you didn't move; 2 means you moved all the way both times.
+
+  Bands (editorial): $S \le 0$ "Didn't move toward the group"; $0 < S < 2$ "Moved part way toward the group"; $S = 2$ "Moved all the way to the group both times".
+
+**T2. Independence from authority.** *Editorial.*
+- Definition: you don't accept a claim because of an expert tag when the evidence doesn't support it.
+- Evidence: the 2 authority tasks. Rating the false, expert-tagged claim "Likely" or "Very likely" counts as going along.
+- Formula: $k_A \in \{0, 1, 2\}$, the number of false tagged claims rated likely. No rate and no range are shown: a rate from 2 items looks more precise than it is (1 of 2 has a 95% range of 9–91%).
+- Bands (editorial): 0 "Didn't take either claim on the tag"; 1 "Took 1 of 2 claims on the tag"; 2 "Took both claims on the tag".
+- Known gap: with no untagged control claims (deferred), going along can't be told apart from not knowing the fact. The wording says what happened, not why.
+
+**T3. Reflective reasoning** (checking the first answer). *Adapted from the CRT's correct / intuitive / other coding (Frederick 2005; Thomson & Oppenheimer 2016); items and bands editorial.*
+- Definition: when a quick answer arrives, you check it before giving it.
+- Evidence: the 2 first-impression tasks, each coded correct, intuitive (the lure) or other.
+- Formula: $k_G \in \{0,1,2\}$, the number of intuitive (lure) answers, with $c_G$, the number correct, shown beside it. Other wrong answers count toward neither.
+- Bands (editorial): $k_G = 0$ "Checked your first answer both times"; $k_G = 1$ "Went with the first answer once"; $k_G = 2$ "Went with the first answer both times".
+- Known gaps (docs/RESEARCH.md): the items are reworded CRT items that many people have seen (51.4% in one sample had seen at least one; Haigh 2016), and the CRT partly measures numeracy (Sinayev & Peters 2015).
+
+**T4. Calibrated scepticism, as opposed to contrarianism.** *Deferred: defined here, not reported.*
+- Definition: your agreement follows the evidence rather than the source. You go along with a crowd or an expert when they're right and not when they're wrong. A contrarian rejects both; a conformist accepts both. This is the observable side of "looks at both sides fairly before concluding".
+- Why deferred: every current task has the crowd or expert wrong, so T1 and T2 only measure $b$ below. On them, a pure contrarian looks perfectly independent.
+- Evidence it would need: at least 4 cue-right items (the crowd or expert is right and the facts on screen agree) and 4 cue-wrong items, mixed so they can't be told apart by look.
+- Formula (borrows BSR's simple difference score, not a signal-detection model):
+
+  $$D = a - b, \qquad B = \frac{a + b}{2} - \frac{1}{2}$$
+
+  - $a$: share of cue-right items where you went along with the source.
+  - $b$: share of cue-wrong items where you went along with the source (the herd rate $r$ is this for crowd items).
+  - $D$: discrimination, from −1 to 1. High means your agreement tracks whether the source is right.
+  - $B$: lean, from −½ to ½. Positive means you tend to agree whatever the evidence; negative means you tend to disagree whatever the evidence.
+
+  Example: a contrarian has $a = 0.1$, $b = 0.1$, so $D = 0$ and $B = -0.4$. A calibrated sceptic has $a = 0.9$, $b = 0.1$, so $D = 0.8$ and $B = 0$.
+- Provisional bands (editorial, not in use until the items exist): $D \ge 0.5$ "Followed the evidence more than the source"; otherwise $B \le -0.25$ "Leaned toward disagreeing whatever the evidence", $B \ge 0.25$ "Leaned toward agreeing whatever the evidence", and anything else "Mixed".
+- Not measurable in a click survey: how *deeply* someone weighs both sides. Answer time is not depth, so it isn't used as a proxy.
+
+**Disclaimer shown with results** (once, above the profile; the existing "mirror, not a measurement" line is folded into it):
+
+> This is a mirror, not a measurement. Each line comes from 2 to 7 questions written for this survey, and none of them is a validated test. The bands are our words for your counts in this sitting, not a comparison with other people. One careless tap can change a band. It shows what you did here, not why, and not who you are.
+
+Each trait card also carries its own one-line caveat: T1 its likely range, T2 "can't tell deferring from not knowing the fact", T3 "you may have seen puzzles like these before".
+
 Deferred (proposals, not built):
+- Showing the trait names, bands and new disclaimer in the UI. Today's results screen shows counts, the herd rate, its range and the shift size, without bands.
+- T4 calibrated scepticism: cue-right items for crowd and authority (at least 4 + 4), then $D$ and $B$ on the results screen.
+- Norms: any "compared with others" wording or validated bands. Needs answers from many people, so it waits for the backend-and-consent item below.
+- Reliability: test–retest across question sets A, B and C, once enough attempts exist to check whether the sets are equally hard.
+- Depth of reasoning (free-text reasons or similar); not measurable with the current task types.
+- More sets for medium and hard, so their retakes are fresh too. Worth it only if people actually retake those levels.
+- The level in share links. Links still hold only the five counts, so a friend's link doesn't say which level it came from.
+- Checking that the levels really differ in difficulty. They are editorial: written to be harder, not yet measured as harder.
 - Untagged control claims to estimate an authority effect within a person.
+- Replacing the two first-impression puzzles, which are reworded versions of widely known CRT items (see docs/RESEARCH.md).
 - Collecting answers across people (needs a backend and consent).
-- Randomised task order and alternate task sets for retakes.
+- Randomised task order.
 - Mac app wrapper.
 
 OPEN QUESTIONS / ASSUMPTIONS:
@@ -429,11 +591,25 @@ OPEN QUESTIONS / ASSUMPTIONS:
 - Settings: theme, motion, text size, clear history. ⌘, opens them where the browser allows, plus a gear button.
 - Feedback tab opens a prefilled GitHub issue (no email, no server).
 - Fixed task order, so friends' results are comparable.
+- Assumed (2026-10-27) the user's answer, that thinking on your own "isn't purely contrarian: you look at both sides fairly and deeply before concluding", is a definition of a *process*. A survey only sees answers, so it is turned into an observable test (T4: does agreement follow the evidence or the source?). "Deeply" has no measure here.
+- Assumed the three traits keep the existing task-to-kind mapping: popularity, switching and opinion → T1; authority → T2; first impression → T3. No task changes.
+- Assumed "thinks on your own" names the whole profile and is never given a threshold of its own, since the user chose no composite.
+- Assumed the bands' cut points (0, below half, half or more, all) are editorial and use "this time" wording, so no band reads as a fixed trait.
+- Assumed T2 and T3 show counts only, with no rate or range, because 2 items give a range too wide to help (1 of 2 → 9–91%).
+- Assumed the Asch figure is shown as a reference point beside T1, never as a cut-off.
+- Assumed (levels) that "easy" is the existing three sets unchanged, and that difficulty is the same for every kind except opinion, which has no right answer: medium and hard opinion statements are on topics people have usually thought about less.
+- Assumed the level choice is remembered between visits, defaults to easy, and that a resumed attempt keeps the level it started with.
+- Open: whether the T4 cue-right items should be built next; it is the only way to tell a contrarian from an independent thinker.
 
 CHANGELOG:
 
 - 2026-10-27 — created
 - 2026-10-27 — interview answers, definitions, deferred list and deliverables filled in
+- 2026-10-27 — added quantitative metrics (herd rate with 95% Wilson range, opinion shift size), results over time (chart, table, export/import) and three question sets so retakes aren't primed
+- 2026-10-27 — refocused on herd mentality: 8 of 12 tasks test popularity, switching and opinion shift, with an answer-alone-first step and a no-crowd control; instructions tasks dropped
+- 2026-10-27 — first version built and published (PR #1); facts corrected after source check (head heat ≤10%, 2026 population figures, CIA Factbook sources replaced)
+- 2026-10-27 — added Easy, Medium and Hard levels (harder facts, same scoring; 24 new fact-checked questions), a chart per level, Back on every question with the first answer locked once the crowd is shown, and a warning when an attempt can't be saved
+- 2026-10-27 — defined the traits: crowd independence, independence from authority and reflective reasoning reported as a profile with no composite; calibrated scepticism vs contrarianism defined but deferred; formulas, editorial count bands, results disclaimer, and a map from each CONTEXT term to its trait
 - 2026-10-27 — added docs/RESEARCH.md: cited review of CRT, CRT-2, AOT, NCS-6/18, Bullshit Receptivity and Asch conformity, plus free online tests; recommends writing our own tasks with adapted controls
 - 2026-09-15 — added meta-instruction: built-out applications include a small feedback tab
 - 2026-09-15 — added meta-instruction: no "Claude" attribution in commits, PRs, or branches
@@ -487,3 +663,4 @@ CHANGELOG:
 - 2026-10-26 — added meta-instruction: a higher quality bar for applications (unit and UI tests kept green, hands-on use of every flow touched, trying to break it, light/dark, sizes, keyboard and accessibility, a report of what was and wasn't tested)
 - 2026-10-26 — changed the note on me: what I'm after includes helping folks get out of survival mode and lean into their true, most enabled purpose
 - 2026-10-26 — changed meta-instruction: the interface isn't cheesy (no gimmicky copy, forced jokes or over-the-top celebration; personality stays quiet)
+- 2026-11-09 — updated the meta-instructions to the current meta doc

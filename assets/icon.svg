@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Do You Think On Your Own? icon: three arrows, one turned its own way">
+  <rect width="64" height="64" rx="14" fill="#F4EEE4"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4.5">
+    <g stroke="#B5ACA0">
+      <path d="M13 14h30M36 8l7 6-7 6"/>
+      <path d="M13 50h30M36 44l7 6-7 6"/>
+    </g>
+    <path stroke="#3F6A8E" d="M15 40l27-13M33 25.5l9 1.5-2.5 8.5"/>
+  </g>
+</svg>
